@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>창릉 프리미어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  var SUPABASE_URL = "https://xrushybvdckfvlbhhfld.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydXNoeWJ2ZGNrZnZsYmhoZmxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NzE2NTgsImV4cCI6MjEwNTQ0NzY1OH0.3MVw5sjZPbM_VUU-QQulFgT84ODk1TPQN-oqPKdiQ68";
+
+  // Supabase(다른 회사 서버)를 두 개의 CDN에서 순서대로 시도해서 불러온다 —
+  // 한쪽이 막혀 있어도 다른 쪽으로 연결되게 하기 위해서다.
+  window.__dbReady = (function(){
+    function loadScript(src){
+      return new Promise(function(resolve, reject){
+        var s = document.createElement("script");
+        s.src = src;
+        s.onload = function(){ resolve(); };
+        s.onerror = function(){ reject(new Error("load failed: "+src)); };
+        document.head.appendChild(s);
+      });
+    }
+    var sources = [
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+      "https://unpkg.com/@supabase/supabase-js@2"
+    ];
+    function tryLoad(i){
+      if(i >= sources.length) return Promise.reject(new Error("모든 경로에서 Supabase를 불러오지 못했습니다"));
+      return loadScript(sources[i])
+        .then(function(){ return makeSupabaseDb(); })
+        .catch(function(err){ console.error(err); return tryLoad(i+1); });
+    }
+
+    // 우리 앱이 기대하는 모양(doc().get/set/onSnapshot, collection().where().get/onSnapshot)으로
+    // Supabase의 kv_store 테이블을 감싸는 어댑터
+    function makeSupabaseDb(){
+      var client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      var TABLE = "kv_store";
+
+      function snapFromRow(row){
+        var exists = !!row;
+        var value = exists ? row.value : undefined;
+        return { exists: exists, data: function(){ return value; } };
+      }
+
+      function docRef(path){
+        function get(){
+          return client.from(TABLE).select("value").eq("key", path).maybeSingle()
+            .then(function(res){
+              if(res.error) throw res.error;
+              return snapFromRow(res.data);
+            });
+        }
+        return {
+          get: get,
+          set: function(obj){
+            return client.from(TABLE)
+              .upsert({ key: path, value: obj, updated_at: new Date().toISOString() }, { onConflict: "key" })
+              .then(function(res){ if(res.error) throw res.error; });
+          },
+          onSnapshot: function(cb, errCb){
+            get().then(cb).catch(function(e){ if(errCb) errCb(e); });
+            var channel = client.channel("doc:"+path)
+              .on("postgres_changes",
+                { event: "*", schema: "public", table: TABLE, filter: "key=eq."+path },
+                function(){ get().then(cb).catch(function(e){ if(errCb) errCb(e); }); })
+              .subscribe();
+            return function unsub(){ client.removeChannel(channel); };
+          }
+        };
+      }
+
+      function collectionRef(basePath){
+        return {
+          doc: function(id){ return docRef(basePath + "/" + id); },
+          where: function(field, op, val){
+            var prefix = basePath + "/" + val + "_";
+            function fetchDocs(){
+              return client.from(TABLE).select("key,value").like("key", prefix+"%")
+                .then(function(res){
+                  if(res.error) throw res.error;
+                  var docs = (res.data||[]).map(function(row){
+                    return { id: row.key, data: function(){ return row.value; } };
+                  });
+                  return { docs: docs };
+                });
+            }
+            return {
+              get: fetchDocs,
+              onSnapshot: function(cb, errCb){
+                fetchDocs().then(cb).catch(function(e){ if(errCb) errCb(e); });
+                var channel = client.channel("col:"+basePath+":"+val)
+                  .on("postgres_changes", { event: "*", schema: "public", table: TABLE }, function(payload){
+                    var k = (payload.new && payload.new.key) || (payload.old && payload.old.key);
+                    if(k && k.indexOf(prefix) === 0){
+                      fetchDocs().then(cb).catch(function(e){ if(errCb) errCb(e); });
+                    }
+                  })
+                  .subscribe();
+                return function unsub(){ client.removeChannel(channel); };
+              }
+            };
+          }
+        };
+      }
+
+      return { doc: docRef, collection: collectionRef };
+    }
+
+    return tryLoad(0);
+  })();
+</script>
+<style>
+  :root{
+    --bg:#F3F4EF; --surface:#FFFFFF; --ink:#2A2A2C; --muted:#71717A;
+    --rule:#E2E3DE; --rule-strong:#C9CAC3;
+    --accent:#4DB848; --accent-soft:#E5F5E3; --accent-ink:#FFFFFF; --accent-text:#F68B1E;
+    --feature:#F68B1E; --feature-soft:#FDECD8; --feature-ink:#FFFFFF;
+    --danger:#B23A2A; --sun:#B0483A; --sat:#3A6E8C;
+    --shadow:none;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17181A; --surface:#212325; --ink:#EDEEE9; --muted:#9C9C9F;
+      --rule:#333537; --rule-strong:#484A4D;
+      --accent:#6BCB67; --accent-soft:#1E3320; --accent-ink:#0E1A0E; --accent-text:#FFA64D;
+      --feature:#FFA64D; --feature-soft:#3A2A12; --feature-ink:#2B1400;
+      --danger:#E0806D; --sun:#E08A7C; --sat:#8FB2DC;
+      --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17181A; --surface:#212325; --ink:#EDEEE9; --muted:#9C9C9F;
+    --rule:#333537; --rule-strong:#484A4D;
+    --accent:#6BCB67; --accent-soft:#1E3320; --accent-ink:#0E1A0E; --accent-text:#FFA64D;
+    --feature:#FFA64D; --feature-soft:#3A2A12; --feature-ink:#2B1400;
+    --danger:#E0806D; --sun:#E08A7C; --sat:#8FB2DC; --shadow:none;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%;
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:26px 16px 90px}
+  h1,h2,h3{font-family:"Gowun Batang",serif;font-weight:700;letter-spacing:-.01em;margin:0}
+
+  /* ---- top bar ---- */
+  .bar{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  .bar h1{font-size:24px;line-height:1.2}
+  .back{
+    flex:none;border:1px solid var(--rule-strong);background:var(--surface);color:var(--ink);
+    border-radius:3px;padding:6px 12px;font:inherit;cursor:pointer;
+  }
+  .back:hover{border-color:var(--ink)}
+  .bar .sub{margin-left:auto;color:var(--muted);font-size:14px;white-space:nowrap}
+  input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+  /* ---- home ---- */
+  .lede{color:var(--muted);font-size:15px;margin:16px 0 22px;max-width:56ch}
+  .menu{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .tile{
+    display:block;text-align:left;width:100%;cursor:pointer;
+    background:var(--surface);border:1px solid var(--ink);border-left:3px solid var(--accent);
+    border-radius:3px;padding:16px 16px 14px;font:inherit;color:inherit;
+  }
+  .tile:hover{border-color:var(--rule-strong);border-left-color:var(--accent)}
+  .tile.featured{
+    border-left-width:4px;border-left-color:var(--feature);
+    background:var(--feature-soft);
+  }
+  .tile.featured:hover{border-left-color:var(--feature)}
+  .tile.featured .t{font-size:20px}
+  .tile .t{font-family:"Gowun Batang",serif;font-weight:700;font-size:19px;display:block}
+  .tile .d{color:var(--muted);font-size:14px;display:block;margin-top:3px}
+
+  /* ---- month picker ---- */
+  .pick{display:flex;align-items:center;gap:6px;margin:18px 0 6px;flex-wrap:wrap}
+  .pick input[type=month]{
+    font:inherit;color:inherit;background:var(--surface);
+    border:1px solid var(--rule-strong);border-radius:3px;padding:6px 9px;
+  }
+  .arrow{
+    width:32px;height:32px;flex:none;border:1px solid var(--rule-strong);background:var(--surface);
+    color:var(--ink);border-radius:3px;font-size:16px;line-height:1;cursor:pointer;
+  }
+  .arrow:hover{border-color:var(--ink)}
+  .pick .label{font-family:"Gowun Batang",serif;font-weight:700;font-size:20px;margin-right:4px}
+
+  /* ---- calendar ---- */
+  .cal{background:var(--surface);border:1px solid var(--ink);border-radius:4px;overflow:hidden}
+  .cal .dow,.cal .grid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .cal .dow div{
+    padding:8px 0;text-align:center;font-size:13.5px;color:var(--muted);
+    border-bottom:1px solid var(--rule-strong);
+  }
+  .cal .dow div:first-child{color:var(--sun)} .cal .dow div:last-child{color:var(--sat)}
+  .cell{
+    min-height:78px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    padding:6px 5px;text-align:left;background:none;font:inherit;color:inherit;cursor:pointer;
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .cell:nth-child(7n){border-right:none}
+  .cell.blank{cursor:default;background:transparent}
+  .cell .num{font-size:14px;color:var(--muted)}
+  .cell.sun .num{color:var(--sun)} .cell.sat .num{color:var(--sat)}
+  .cell.today .num{font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .cell.worked{background:var(--accent-soft)}
+  .cell.sel{outline:2px solid var(--accent);outline-offset:-2px}
+  .cell .who{font-size:12.5px;color:var(--accent-text);line-height:1.35;overflow:hidden}
+  .cell .hrs{margin-top:auto;font-size:12.5px;color:var(--accent-text);font-weight:500}
+  .cal.compact .cell{min-height:32px;align-items:center;justify-content:center;padding:2px}
+  .cal.compact .cell .num{font-size:13px}
+
+  .weekgrid{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    background:var(--surface);border:1px solid var(--ink);border-radius:4px;overflow:hidden;
+  }
+  .wcell{position:relative;border-right:1px solid var(--rule);min-height:96px}
+  .wcell .num{display:block;margin-bottom:1em}
+  .coffeebadge{position:absolute;top:5px;right:6px;font-size:12.5px;color:#6F4E37;line-height:1;white-space:nowrap;font-weight:700}
+  .coffeetoggle{display:flex;align-items:center;gap:8px;margin:10px 0 4px}
+  .wcell:nth-child(7n){border-right:none}
+  .wdow{font-size:15px;color:var(--ink);font-weight:500}
+  .wcell.sun .wdow{color:var(--sun)} .wcell.sat .wdow{color:var(--sat)}
+  .wname{font-size:12.5px;color:var(--ink);line-height:1.4;word-break:keep-all;overflow-wrap:break-word}
+  .wname.off{color:var(--danger);font-weight:600}
+
+  .assignlist{display:flex;flex-direction:column;margin-bottom:4px}
+  .assignrow{padding:8px 0;border-bottom:1px solid var(--rule)}
+  .assignrow:last-child{border-bottom:none}
+  .assigntop{display:flex;align-items:center;gap:8px}
+  .assigntime{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .aname{font-weight:500;flex:1}
+  .rolebtns{display:flex;gap:6px}
+  .rolebtn{
+    font:inherit;font-size:13.5px;cursor:pointer;background:var(--surface);color:var(--muted);
+    border:1px solid var(--rule-strong);border-radius:999px;padding:4px 11px;
+  }
+  .rolebtn:hover{border-color:var(--accent);color:var(--accent)}
+  .rolebtn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+  .summarydetail{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+  .summaryline{padding:4px 0;font-size:15px}
+
+  .personweek{background:var(--surface);border:1px solid var(--ink);border-radius:4px;padding:14px;max-width:100%}
+  .personweekdate{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .personweekbody{display:flex;align-items:stretch;gap:14px}
+  .personweekname{
+    flex:0 0 auto;min-width:56px;display:flex;align-items:center;justify-content:center;
+    font-family:"Gowun Batang",serif;font-weight:700;font-size:20px;text-align:center;
+    padding:0 6px;word-break:keep-all;
+  }
+  .personweekrow{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--ink);border-radius:4px;overflow:hidden}
+  .personweekrow .wcell{min-height:70px;border-bottom:none}
+  .personweekrow .wname{font-size:15px;line-height:1.3}
+
+  /* ---- generic card / list ---- */
+  .card{background:var(--surface);border:1px solid var(--ink);border-radius:4px;margin-top:16px}
+  .card-head{padding:12px 15px;border-bottom:1px solid var(--rule);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .card-head .h{font-family:"Gowun Batang",serif;font-weight:700;font-size:18px}
+  .card-head .m{color:var(--muted);font-size:14px}
+  .card-head .sum{margin-left:auto;color:var(--accent-text);font-weight:500;white-space:nowrap}
+  .pad{padding:14px 15px}
+  .empty{padding:16px 15px;color:var(--muted);font-size:15px}
+
+  .addrow{padding:13px 15px;border-bottom:1px solid var(--rule);background:var(--accent-soft)}
+  .addlabel{font-family:"Gowun Batang",serif;font-weight:700;font-size:15px;margin-bottom:9px}
+  .addline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+  .addsep{font-size:13.5px;color:var(--muted)}
+  .adddur{font-weight:500;color:var(--accent-text);min-width:64px}
+  .datebtn{font:inherit;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--rule-strong);border-radius:3px;padding:7px 11px}
+  .datebtn:hover{border-color:var(--accent);color:var(--accent)}
+  input.hoNum{width:110px;text-align:right}
+
+  .diffchart{overflow-x:auto}
+  .diffchart svg{display:block;min-width:260px}
+  .saleschart svg{display:block;width:100%}
+  .chartlabels{display:flex;margin-top:2px}
+  .chartlabels span{flex:1 1 0;text-align:center;font-size:12.5px;color:var(--muted);white-space:nowrap}
+  tfoot td{border-top:2px solid var(--ink);border-bottom:none;font-weight:500}
+  tfoot .sumlabel{color:var(--muted);font-weight:500}
+  tfoot .sumval{color:var(--accent-text)}
+
+  table{border-collapse:collapse;width:100%;min-width:480px}
+  .table-wrap{overflow-x:auto}
+  th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule)}
+  th{font-weight:500;font-size:13.5px;color:var(--muted);border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  td.dur{color:var(--accent-text);font-weight:500}
+  td.act,th.act{width:40px;text-align:right}
+  input[type=time],input[type=date]{
+    font:inherit;color:inherit;background:transparent;border:1px solid var(--rule);
+    border-radius:3px;padding:3px 6px;font-variant-numeric:tabular-nums;
+  }
+  input[type=time]:hover,input[type=date]:hover{border-color:var(--rule-strong)}
+  input.tf{
+    font:inherit;color:inherit;background:transparent;border:1px solid var(--rule);
+    border-radius:3px;padding:3px 6px;width:74px;text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  input.tf:hover{border-color:var(--rule-strong)}
+  input.tf::placeholder{color:var(--muted);opacity:.6}
+
+  .rowdel{border:none;background:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:4px 6px;border-radius:3px}
+  .rowdel:hover{color:var(--danger)}
+
+  /* ---- name chips ---- */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{
+    font:inherit;cursor:pointer;background:var(--surface);color:var(--ink);
+    border:1px solid var(--rule-strong);border-radius:999px;padding:8px 16px;
+  }
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+  .roster{display:flex;flex-direction:column}
+  .roster .item{display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid var(--rule)}
+  .roster .item:last-child{border-bottom:none}
+  .roster .item .nm{font-family:"Gowun Batang",serif;font-weight:700;font-size:17px}
+  .roster .item .sm{color:var(--muted);font-size:14px}
+  .roster .item .go{margin-left:auto;border:none;background:none;font:inherit;color:var(--accent-text);cursor:pointer;font-weight:500}
+  .rowlink{width:100%;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:10px}
+
+  .undowrap{
+    margin-top:14px;background:var(--surface);border:1px solid var(--ink);border-left:3px solid var(--accent);
+    border-radius:3px;overflow:hidden;
+  }
+  .undotitle{padding:10px 15px 6px;font-size:13.5px;color:var(--muted)}
+  .undorow{display:flex;align-items:center;gap:10px;padding:8px 15px;border-top:1px solid var(--rule)}
+  .undoname{font-weight:500;flex:1}
+
+  .btn{font:inherit;font-weight:500;cursor:pointer;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);border-radius:3px;padding:8px 16px}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--rule-strong)}
+  .btn.ghost:hover{border-color:var(--ink);filter:none}
+  .ti{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--rule-strong);border-radius:3px;padding:8px 10px}
+
+  .field{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .field label{font-size:14px;color:var(--muted)}
+
+  .bigline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .bignum{font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(28px,7vw,42px);line-height:1.1}
+  .bignum span{font-size:.4em;font-family:"IBM Plex Sans KR",sans-serif;font-weight:400;margin-left:2px}
+
+  .hoverable{border-bottom:1px dotted var(--rule-strong);cursor:help}
+  #tip{
+    position:absolute;z-index:50;display:none;background:var(--surface);color:var(--ink);
+    border:1px solid var(--rule-strong);border-radius:4px;padding:9px 11px;font-size:14px;
+    box-shadow:0 6px 20px rgba(0,0,0,.14);max-width:min(300px,86vw);
+  }
+  #tip .tiphead{font-size:13.5px;color:var(--muted);margin-bottom:6px}
+  #tip .cal{border:none;box-shadow:none;background:none}
+  #tip .cal .cell{border-color:transparent;min-height:26px}
+
+  #datepop{
+    position:absolute;z-index:60;display:none;background:var(--surface);color:var(--ink);
+    border:1px solid var(--rule-strong);border-radius:4px;padding:10px;font-size:14px;
+    box-shadow:0 6px 20px rgba(0,0,0,.16);width:260px;
+  }
+  #datepop .cal{border:none;box-shadow:none;background:none}
+  #datepop .cal .cell{border-color:transparent;min-height:30px}
+  #datepop .denav{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  #datepop .delabel{font-family:"Gowun Batang",serif;font-weight:700;font-size:15.5px;flex:1;text-align:center}
+  #datepop .arrow{width:26px;height:26px;font-size:14px}
+
+  .note{color:var(--muted);font-size:14px;margin-top:10px}
+  .status{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:1em}
+  .status.warn{color:var(--danger)}
+  .status.success{color:var(--accent-text);font-weight:500}
+
+  @media (max-width:560px){
+    .wrap{padding:18px 11px 80px}
+    .cell{min-height:60px}
+    .cell .who{display:none}
+    .wcell{min-height:70px;padding:4px 3px}
+    .wname{font-size:11px}
+    .personweekname{min-width:40px;font-size:16px}
+    .personweekbody{gap:8px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="tip" role="tooltip"></div>
+<div id="datepop" role="dialog" aria-label="날짜 선택"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===================== state ===================== */
+  var LS_KEY = "shift-log-v2";
+  var REMOVED_KEY = "shift-log-v2-removed";
+  var RECENT_REMOVED_KEY = "shift-log-v2-recent-removed";
+  var db = null, subs = [], subYm = null;
+
+  // 삭제는 서버 저장 권한과 상관없이 이 브라우저에서는 반드시 적용되도록,
+  // 지운 근무자의 id 를 별도로 로컬에 남겨 둔다.
+  var removedIds = (function(){
+    try{ return new Set(JSON.parse(localStorage.getItem(REMOVED_KEY)||"[]")); }
+    catch(e){ return new Set(); }
+  })();
+  function persistRemovedIds(){
+    try{ localStorage.setItem(REMOVED_KEY, JSON.stringify(Array.from(removedIds))); }catch(e){}
+  }
+  function applyRemovedOverride(){
+    state.employees.forEach(function(e){ if(removedIds.has(e.id)) e.active=false; });
+  }
+
+  var state = {
+    view: "home",
+    ym: ymOf(new Date()),
+    empId: null,        // 개인 근무 확인 대상
+    selDate: null,      // 매장 근무 기록에서 고른 날짜
+    clockEmp: null,     // 출퇴근 기록에서 고른 근무자
+    employees: [],      // [{id,name,wage}]
+    data: {},            // data[ym][empId] = [{id,date,inT,outT}]
+    handover: {},        // handover[ym] = [{id,date,cash,card,posCash}]
+    schedule: {},        // schedule[weekStart][dateStr] = [{empId, role}]  role: "open" | "close" | null
+    schedWeek: sundayOfStr(todayStr()),      // 근무표에서 보고 있는 주의 일요일 날짜
+    schedSelDate: null,   // 근무표에서 고른 날짜
+    schedSummaryEmp: null,// 근무표 하단 요약에서 고른 근무자
+    coffeeFrontFirst: true, // 일요일에 "커피 앞"부터 시작할지, "커피 뒤"부터 시작할지
+    adminPassword: "12345",
+    adminUnlocked: false,  // 정산·관리자 메뉴에 새로 들어갈 때마다 다시 확인한다
+    adminSection: null     // 관리자 안에서 고른 하위 항목: password | settle | backup
+  };
+
+  var VIEWS = {
+    home:     { title:"창릉 프리미어" },
+    store:    { title:"매장 근무 기록" },
+    clock:    { title:"출퇴근 기록" },
+    overall:  { title:"전체 근무 확인" },
+    people:   { title:"개인 근무 확인" },
+    person:   { title:"개인 근무 확인" },
+    add:      { title:"근무자 추가" },
+    handover: { title:"일일 인수인계" },
+    admin:    { title:"관리자" },
+    schedule: { title:"근무표" }
+  };
+
+  /* ===================== helpers ===================== */
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function ymOf(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1); }
+  function dateStr(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function todayStr(){ return dateStr(new Date()); }
+  function ymOfDate(s){ return (s||"").slice(0,7); }
+  function parseDateStr(ds){ var p=ds.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function addDaysStr(ds, n){ var d=parseDateStr(ds); d.setDate(d.getDate()+n); return dateStr(d); }
+  function sundayOfStr(ds){ var d=parseDateStr(ds); d.setDate(d.getDate()-d.getDay()); return dateStr(d); }
+  function uid(){ return "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  // db 스냅샷에서 온 데이터는 frozen 이라 그대로 들고 있다가 나중에 e.active=false 처럼
+  // 직접 고치면 (strict mode 라) 조용히 실패하거나 에러가 난다. 항상 얕은 복사본을 만들어 쓴다.
+  function cloneList(arr){
+    return (arr||[]).map(function(o){ return Object.assign({}, o); });
+  }
+  function ymLabel(ym){ var p=ym.split("-"); return p[0]+"년 "+parseInt(p[1],10)+"월"; }
+  function dayLabel(ds){
+    var p=ds.split("-"), d=new Date(+p[0],+p[1]-1,+p[2]);
+    return parseInt(p[1],10)+"월 "+parseInt(p[2],10)+"일 ("+"일월화수목금토"[d.getDay()]+")";
+  }
+  function todayFullLabel(){
+    var d=new Date();
+    return d.getFullYear()+"년 "+(d.getMonth()+1)+"월 "+d.getDate()+"일 ("+"일월화수목금토"[d.getDay()]+")";
+  }
+  function el(tag, cls, text){
+    var e=document.createElement(tag);
+    if(cls) e.className=cls;
+    if(text!=null) e.textContent=text;
+    return e;
+  }
+  function minutesOf(t){
+    if(!t || t.indexOf(":")<0) return null;
+    var p=t.split(":"), h=parseInt(p[0],10), m=parseInt(p[1],10);
+    if(isNaN(h)||isNaN(m)) return null;
+    return h*60+m;
+  }
+  // "9" "930" "0930" "9:5" 처럼 적어도 09:00 / 09:30 / 09:05 로 맞춰 준다
+  function normalizeTime(s){
+    var d=String(s||"").replace(/\D/g,"");
+    if(!d) return "";
+    var h,m;
+    if(d.length===1){ h=+d; m=0; }
+    else if(d.length===2){ h=+d; m=0; }
+    else if(d.length===3){ h=+d.slice(0,1); m=+d.slice(1); }
+    else { h=+d.slice(0,2); m=+d.slice(2,4); }
+    if(isNaN(h)||isNaN(m)||h>23||m>59) return "";
+    return pad(h)+":"+pad(m);
+  }
+  function timeField(value, commit, preview){
+    var i=document.createElement("input");
+    i.type="text"; i.className="tf"; i.inputMode="numeric";
+    i.placeholder="09:00"; i.maxLength=5; i.autocomplete="off";
+    i.value=value||"";
+    i.addEventListener("input", function(){
+      i.value=i.value.replace(/[^\d:]/g,"").slice(0,5);
+      if(preview) preview();   // 값을 바꾸지 않고 미리보기만 계산 — 타이핑을 끊지 않음
+    });
+    i.addEventListener("change", commit);   // 입력을 마치고 다른 곳을 누르면 그때 정리·저장
+    i.addEventListener("keydown", function(e){ if(e.key==="Enter"){ commit(); i.blur(); } });
+    return i;
+  }
+  function worked(row){
+    var a=minutesOf(row.inT), b=minutesOf(row.outT);
+    if(a===null||b===null) return null;
+    var d=b-a; if(d<0) d+=1440;
+    return d;
+  }
+  function fmtDur(min){
+    if(min===null) return "—";
+    var h=Math.floor(min/60), m=min%60;
+    if(h&&m) return h+"시간 "+m+"분";
+    if(h) return h+"시간";
+    return m+"분";
+  }
+  function empById(id){
+    for(var i=0;i<state.employees.length;i++) if(state.employees[i].id===id) return state.employees[i];
+    return null;
+  }
+  function activeEmployees(){
+    return state.employees.filter(function(e){ return e.active!==false && !removedIds.has(e.id); });
+  }
+  function rowsOf(ym, empId){
+    return (state.data[ym] && state.data[ym][empId]) || [];
+  }
+  function setRows(ym, empId, rows){
+    if(!state.data[ym]) state.data[ym]={};
+    state.data[ym][empId]=rows;
+  }
+  function sortRows(rows){
+    return rows.slice().sort(function(a,b){
+      if(a.date!==b.date) return (a.date||"").localeCompare(b.date||"");
+      return (a.inT||"").localeCompare(b.inT||"");
+    });
+  }
+  function monthTotal(ym, empId){
+    var t=0; rowsOf(ym,empId).forEach(function(r){ var m=worked(r); if(m!==null) t+=m; });
+    return t;
+  }
+  function daysInMonth(ym){
+    var p=ym.split("-"); return new Date(+p[0], +p[1], 0).getDate();
+  }
+  function firstDow(ym){
+    var p=ym.split("-"); return new Date(+p[0], +p[1]-1, 1).getDay();
+  }
+  function setStatus(msg, warn){
+    var s=document.getElementById("statusLine");
+    if(!s) return;
+    s.textContent=msg||""; s.className="status"+(warn?" warn":"");
+  }
+
+  /* ===================== storage ===================== */
+  var queue={};
+  function queued(key, fn){
+    var prev=queue[key]||Promise.resolve();
+    var next=prev.then(fn,fn).catch(function(e){
+      setStatus("저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", true);
+      console.error(e);
+    });
+    queue[key]=next; return next;
+  }
+  function readLocal(){
+    try{ return JSON.parse(localStorage.getItem(LS_KEY)||"{}"); }catch(e){ return {}; }
+  }
+  function writeLocal(all){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(all)); }catch(e){}
+  }
+  function loadLocal(){
+    var all=readLocal();
+    state.employees=all.employees||[];
+    state.data=all.data||{};
+    state.handover=all.handover||{};
+    state.schedule=all.schedule||{};
+    state.coffeeFrontFirst=(all.coffeeFrontFirst!==undefined)? all.coffeeFrontFirst : true;
+    state.adminPassword=all.adminPassword||"12345";
+    applyRemovedOverride();
+  }
+  function saveEmployees(){
+    if(db) return queued("emp", function(){
+      return db.doc("config/employees").set({ list: state.employees });
+    });
+    var all=readLocal(); all.employees=state.employees; writeLocal(all);
+    return Promise.resolve();
+  }
+  function saveAdminPassword(){
+    if(db) return queued("admin", function(){
+      return db.doc("config/admin").set({ password: state.adminPassword });
+    });
+    var all=readLocal(); all.adminPassword=state.adminPassword; writeLocal(all);
+    return Promise.resolve();
+  }
+  function saveCoffeeSetting(){
+    if(db) return queued("coffee", function(){
+      return db.doc("config/coffee").set({ frontFirst: state.coffeeFrontFirst });
+    });
+    var all=readLocal(); all.coffeeFrontFirst=state.coffeeFrontFirst; writeLocal(all);
+    return Promise.resolve();
+  }
+  function saveMonth(ym, empId){
+    var rows=rowsOf(ym,empId);
+    if(db) return queued("s:"+ym+":"+empId, function(){
+      return db.collection("shifts").doc(ym+"_"+empId).set({ ym:ym, empId:empId, rows:rows });
+    });
+    var all=readLocal();
+    all.data=all.data||{}; all.data[ym]=all.data[ym]||{}; all.data[ym][empId]=rows;
+    writeLocal(all);
+    return Promise.resolve();
+  }
+  function rowsOfHandover(ym){
+    return state.handover[ym] || [];
+  }
+  function setHandoverRows(ym, rows){
+    state.handover[ym]=rows;
+  }
+  function saveHandover(ym){
+    var rows=rowsOfHandover(ym);
+    if(db) return queued("ho:"+ym, function(){
+      return db.doc("handover/"+ym).set({ ym:ym, rows:rows });
+    });
+    var all=readLocal();
+    all.handover=all.handover||{}; all.handover[ym]=rows;
+    writeLocal(all);
+    return Promise.resolve();
+  }
+  function scheduleDayEntries(weekStart, ds){
+    return (state.schedule[weekStart] && state.schedule[weekStart][ds]) || [];
+  }
+  function setScheduleDayEntries(weekStart, ds, entries){
+    if(!state.schedule[weekStart]) state.schedule[weekStart]={};
+    state.schedule[weekStart][ds]=entries;
+  }
+  function saveSchedule(weekStart){
+    var days=state.schedule[weekStart]||{};
+    if(db) return queued("sched:"+weekStart, function(){
+      return db.doc("schedule/"+weekStart).set({ weekStart:weekStart, days:days });
+    });
+    var all=readLocal();
+    all.schedule=all.schedule||{}; all.schedule[weekStart]=days;
+    writeLocal(all);
+    return Promise.resolve();
+  }
+  function ensureMonth(ym){
+    // 다른 달 문서를 불러와 state.data 에 채운다 (날짜를 다른 달로 옮길 때 사용)
+    if(state.data[ym]) return Promise.resolve();
+    if(!db){ state.data[ym]=(readLocal().data||{})[ym]||{}; return Promise.resolve(); }
+    return db.collection("shifts").where("ym","==",ym).get().then(function(q){
+      var m={};
+      q.docs.forEach(function(d){ var v=d.data(); if(v&&v.empId) m[v.empId]=cloneList(v.rows); });
+      state.data[ym]=m;
+    }).catch(function(){ state.data[ym]=state.data[ym]||{}; });
+  }
+
+  function subscribe(ym){
+    if(!db || subYm===ym) return;
+    subYm=ym;
+    subs.forEach(function(f){ try{f();}catch(e){} });
+    subs=[];
+    subs.push(db.doc("config/employees").onSnapshot(function(s){
+      var list=cloneList((s.exists && s.data().list)||[]);
+      if(JSON.stringify(list)===JSON.stringify(state.employees)) return;
+      state.employees=list;
+      applyRemovedOverride();
+      render(true);
+    }, dbErr));
+    subs.push(db.doc("config/admin").onSnapshot(function(s){
+      var pw=(s.exists && s.data().password) || "12345";
+      if(pw===state.adminPassword) return;
+      state.adminPassword=pw;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/coffee").onSnapshot(function(s){
+      var v=s.exists && typeof s.data().frontFirst==="boolean" ? s.data().frontFirst : true;
+      if(v===state.coffeeFrontFirst) return;
+      state.coffeeFrontFirst=v;
+      render();
+    }, dbErr));
+    subs.push(db.collection("shifts").where("ym","==",ym).onSnapshot(function(q){
+      var m={};
+      q.docs.forEach(function(d){ var v=d.data(); if(v&&v.empId) m[v.empId]=cloneList(v.rows); });
+      if(JSON.stringify(m)===JSON.stringify(state.data[ym]||{})) return;
+      state.data[ym]=m;
+      render();
+    }, dbErr));
+    subs.push(db.doc("handover/"+ym).onSnapshot(function(s){
+      var rows=cloneList((s.exists && s.data().rows)||[]);
+      if(JSON.stringify(rows)===JSON.stringify(state.handover[ym]||[])) return;
+      state.handover[ym]=rows;
+      render();
+    }, dbErr));
+  }
+  var subWeek=null, weekSub=null;
+  function subscribeWeek(weekStart){
+    if(!db || subWeek===weekStart) return;
+    subWeek=weekStart;
+    if(weekSub){ try{weekSub();}catch(e){} weekSub=null; }
+    weekSub=db.doc("schedule/"+weekStart).onSnapshot(function(s){
+      var raw=(s.exists && s.data().days) || {};
+      var days={};
+      Object.keys(raw).forEach(function(ds){ days[ds]=cloneList(raw[ds]); });
+      if(JSON.stringify(days)===JSON.stringify(state.schedule[weekStart]||{})) return;
+      state.schedule[weekStart]=days;
+      render();
+    }, dbErr);
+  }
+  function dbErr(e){
+    if(e&&e.code==="revoked") return;
+    setStatus("기록을 불러오지 못했습니다. 새로고침해 주세요.", true);
+  }
+
+  /* ===================== floating positioning ===================== */
+  function positionFloating(box, target){
+    box.style.display="block";
+    var r=target.getBoundingClientRect();
+    var top=window.scrollY+r.bottom+8;
+    var left=window.scrollX+r.left;
+    var w=box.offsetWidth;
+    if(left+w>window.scrollX+document.documentElement.clientWidth-10){
+      left=window.scrollX+document.documentElement.clientWidth-w-10;
+    }
+    if(left<window.scrollX+8) left=window.scrollX+8;
+    box.style.top=top+"px"; box.style.left=left+"px";
+  }
+
+  /* ===================== tooltip (hover) ===================== */
+  var tip=document.getElementById("tip");
+  function showTip(target, build){
+    tip.textContent="";
+    build(tip);
+    positionFloating(tip, target);
+  }
+  function hideTip(){ tip.style.display="none"; }
+  function attachTip(node, build){
+    node.addEventListener("mouseenter", function(){ showTip(node, build); });
+    node.addEventListener("focus", function(){ showTip(node, build); });
+    node.addEventListener("mouseleave", hideTip);
+    node.addEventListener("blur", hideTip);
+    node.addEventListener("click", function(e){
+      e.preventDefault();
+      if(tip.style.display==="block") hideTip(); else showTip(node, build);
+    });
+  }
+  window.addEventListener("scroll", hideTip, {passive:true});
+
+  /* ===================== date picker (click) ===================== */
+  var datepop=document.getElementById("datepop");
+  function shiftYm(ym, delta){
+    var p=ym.split("-");
+    return ymOf(new Date(+p[0], +p[1]-1+delta, 1));
+  }
+  function closeDatePicker(){
+    datepop.style.display="none";
+    if(datepop._outside){ document.removeEventListener("click", datepop._outside, true); datepop._outside=null; }
+  }
+  function openDatePicker(anchor, initialDate, onPick){
+    if(datepop.style.display==="block" && datepop._anchor===anchor){ closeDatePicker(); return; }
+    closeDatePicker();
+    datepop._anchor=anchor;
+    var pickYm = initialDate ? ymOfDate(initialDate) : state.ym;
+    function paint(){
+      datepop.textContent="";
+      var nav=el("div","denav");
+      var prev=el("button","arrow","‹"); prev.type="button"; prev.setAttribute("aria-label","이전 달");
+      var lbl=el("span","delabel", ymLabel(pickYm));
+      var next=el("button","arrow","›"); next.type="button"; next.setAttribute("aria-label","다음 달");
+      prev.addEventListener("click", function(e){ e.stopPropagation(); pickYm=shiftYm(pickYm,-1); paint(); });
+      next.addEventListener("click", function(e){ e.stopPropagation(); pickYm=shiftYm(pickYm,1); paint(); });
+      nav.appendChild(prev); nav.appendChild(lbl); nav.appendChild(next);
+      datepop.appendChild(nav);
+      datepop.appendChild(buildCalendar(pickYm, {}, {
+        compact:true, showNames:false, selected: initialDate,
+        onPick:function(ds){ closeDatePicker(); onPick(ds); }
+      }));
+    }
+    paint();
+    positionFloating(datepop, anchor);
+    setTimeout(function(){
+      datepop._outside=function(e){
+        if(!datepop.contains(e.target) && e.target!==anchor) closeDatePicker();
+      };
+      document.addEventListener("click", datepop._outside, true);
+    }, 0);
+  }
+  window.addEventListener("scroll", closeDatePicker, {passive:true});
+
+  /* ===================== navigation ===================== */
+  function go(view, opts){
+    opts=opts||{};
+    hideTip();
+    state.view=view;
+    if(opts.empId!==undefined) state.empId=opts.empId;
+    if(opts.ym) state.ym=opts.ym;
+    if(view==="store") state.selDate=null;
+    if(view==="clock") state.clockEmp=null;
+    if(view==="schedule"){ state.schedSelDate=null; state.schedSummaryEmp=null; }
+    if(view==="admin"){ state.adminUnlocked=false; state.adminSection=null; }
+    subscribe(state.ym);
+    if(view==="schedule") subscribeWeek(state.schedWeek);
+    window.scrollTo(0,0);
+    render(true);
+  }
+  function setYm(ym){
+    state.ym=ym; state.selDate=null;
+    subscribe(ym);
+    render(true);
+  }
+  function setWeek(weekStart){
+    state.schedWeek=weekStart;
+    state.schedSelDate=null;
+    subscribeWeek(weekStart);
+    render(true);
+  }
+
+  /* ===================== shared UI pieces ===================== */
+  function topBar(title, backTo, sub){
+    var bar=el("div","bar");
+    if(backTo){
+      var b=el("button","back","‹ 뒤로");
+      b.addEventListener("click", function(){
+        if(backTo==="__admin_menu__"){ state.adminSection=null; render(true); }
+        else go(backTo);
+      });
+      bar.appendChild(b);
+    }
+    bar.appendChild(el("h1",null,title));
+    var right=el("div","sub", todayFullLabel());
+    if(sub) right.title=sub;
+    bar.appendChild(right);
+    return bar;
+  }
+
+  function monthPicker(){
+    var box=el("div","pick");
+    box.appendChild(el("div","label", ymLabel(state.ym)));
+    var prev=el("button","arrow","‹"); prev.setAttribute("aria-label","이전 달");
+    var next=el("button","arrow","›"); next.setAttribute("aria-label","다음 달");
+    var inp=document.createElement("input");
+    inp.type="month"; inp.value=state.ym; inp.setAttribute("aria-label","년도와 월 선택");
+    prev.addEventListener("click", function(){ step(-1); });
+    next.addEventListener("click", function(){ step(1); });
+    inp.addEventListener("change", function(){ if(inp.value) setYm(inp.value); });
+    function step(d){
+      var p=state.ym.split("-");
+      setYm(ymOf(new Date(+p[0], +p[1]-1+d, 1)));
+    }
+    box.appendChild(prev); box.appendChild(inp); box.appendChild(next);
+    return box;
+  }
+
+  function weekRangeLabel(weekStart){
+    return dayLabel(weekStart)+" ~ "+dayLabel(addDaysStr(weekStart,6));
+  }
+  function weekPicker(){
+    var box=el("div","pick");
+    box.appendChild(el("div","label", weekRangeLabel(state.schedWeek)));
+    var prev=el("button","arrow","‹"); prev.setAttribute("aria-label","이전 주");
+    var next=el("button","arrow","›"); next.setAttribute("aria-label","다음 주");
+    prev.addEventListener("click", function(){ setWeek(addDaysStr(state.schedWeek,-7)); });
+    next.addEventListener("click", function(){ setWeek(addDaysStr(state.schedWeek,7)); });
+    box.appendChild(prev); box.appendChild(next);
+    return box;
+  }
+  function coffeeLabel(dayIndex){
+    var isFront = state.coffeeFrontFirst ? (dayIndex%2===0) : (dayIndex%2===1);
+    return isFront ? "커피 앞" : "커피 뒤";
+  }
+  function coffeeToggle(){
+    var wrap=el("div","coffeetoggle");
+    wrap.appendChild(el("span","addsep","일요일 시작"));
+    var frontBtn=el("button","rolebtn"+(state.coffeeFrontFirst?" on":""),"커피 앞"); frontBtn.type="button";
+    var backBtn=el("button","rolebtn"+(!state.coffeeFrontFirst?" on":""),"커피 뒤"); backBtn.type="button";
+    frontBtn.addEventListener("click", function(){
+      if(state.coffeeFrontFirst) return;
+      state.coffeeFrontFirst=true; saveCoffeeSetting(); render(true);
+    });
+    backBtn.addEventListener("click", function(){
+      if(!state.coffeeFrontFirst) return;
+      state.coffeeFrontFirst=false; saveCoffeeSetting(); render(true);
+    });
+    wrap.appendChild(frontBtn); wrap.appendChild(backBtn);
+    return wrap;
+  }
+  function sortedDayEntries(entries){
+    var open=[], mid=[], close=[];
+    entries.forEach(function(e){
+      if(e.role==="open") open.push(e);
+      else if(e.role==="close") close.push(e);
+      else mid.push(e);
+    });
+    return open.concat(mid).concat(close);
+  }
+  function timeRangeText(entry){
+    var left = entry.role==="open" ? "오픈" : (entry.inT||"");
+    var right = entry.role==="close" ? "마감" : (entry.outT||"");
+    if(!left && !right) return "";
+    if(left && right) return left+"-"+right;
+    return left||right;
+  }
+  function entryLabel(entry){
+    var emp=empById(entry.empId);
+    var text=(emp?emp.name:"?");
+    var tr=timeRangeText(entry);
+    if(tr) text+=" "+tr;
+    else if(entry.role==="open") text+=" · 오픈";
+    else if(entry.role==="close") text+=" · 마감";
+    return text;
+  }
+  function buildWeekGrid(weekStart, days){
+    var grid=el("div","weekgrid");
+    var today=todayStr();
+    days.forEach(function(ds,i){
+      var entries=sortedDayEntries(scheduleDayEntries(weekStart, ds));
+      var d=parseDateStr(ds);
+      var cell=document.createElement("button");
+      cell.type="button";
+      cell.className="cell wcell"+(i===0?" sun":"")+(i===6?" sat":"")
+        +(entries.length?" worked":"")+(ds===today?" today":"")+(ds===state.schedSelDate?" sel":"");
+      cell.appendChild(el("div","wdow","일월화수목금토"[i]));
+      cell.appendChild(el("div","coffeebadge", coffeeLabel(i)));
+      cell.appendChild(el("div","num", (d.getMonth()+1)+"/"+d.getDate()));
+      entries.forEach(function(entry){
+        cell.appendChild(el("div","wname", entryLabel(entry)));
+      });
+      cell.addEventListener("click", function(){
+        state.schedSelDate=(state.schedSelDate===ds)? null : ds;
+        render(true);
+      });
+      grid.appendChild(cell);
+    });
+    return grid;
+  }
+
+  // byDay: { "2026-09-03": [{emp, row, min}] }
+  function dayIndex(ym, empIds){
+    var map={};
+    (empIds||state.employees.map(function(e){return e.id;})).forEach(function(id){
+      var emp=empById(id);
+      rowsOf(ym,id).forEach(function(r){
+        if(!r.date) return;
+        (map[r.date]=map[r.date]||[]).push({ emp:emp, row:r, min:worked(r) });
+      });
+    });
+    Object.keys(map).forEach(function(k){
+      map[k].sort(function(a,b){ return (a.row.inT||"").localeCompare(b.row.inT||""); });
+    });
+    return map;
+  }
+
+  function buildCalendar(ym, map, opts){
+    opts=opts||{};
+    var cal=el("div","cal"+(opts.compact?" compact":""));
+    var dow=el("div","dow");
+    ["일","월","화","수","목","금","토"].forEach(function(d){ dow.appendChild(el("div",null,d)); });
+    cal.appendChild(dow);
+
+    var grid=el("div","grid");
+    var lead=firstDow(ym), total=daysInMonth(ym), today=todayStr();
+
+    for(var i=0;i<lead;i++) grid.appendChild(el("div","cell blank"));
+
+    for(var d=1; d<=total; d++){
+      var ds=ym+"-"+pad(d);
+      var entries=map[ds]||[];
+      var dowIdx=(lead+d-1)%7;
+      var cell=document.createElement(opts.compact?"div":"button");
+      cell.className="cell"+(dowIdx===0?" sun":"")+(dowIdx===6?" sat":"")
+        +(entries.length?" worked":"")+(ds===today?" today":"")
+        +(opts.selected===ds?" sel":"");
+      if(cell.tagName==="BUTTON") cell.type="button";
+      cell.appendChild(el("div","num",String(d)));
+
+      if(!opts.compact){
+        var mins=0, any=false;
+        entries.forEach(function(e){ if(e.min!==null){ mins+=e.min; any=true; } });
+        if(entries.length && opts.showNames!==false){
+          var names=entries.map(function(e){ return e.emp?e.emp.name:"?"; });
+          var uniq=[];
+          names.forEach(function(n){ if(uniq.indexOf(n)<0) uniq.push(n); });
+          cell.appendChild(el("div","who", uniq.slice(0,3).join(", ")+(uniq.length>3?" 외":"")));
+        }
+        if(any && opts.showHours!==false) cell.appendChild(el("div","hrs", fmtDur(mins)));
+      }
+
+      if(opts.onPick){
+        (function(ds){ cell.addEventListener("click", function(){ opts.onPick(ds); }); })(ds);
+      }
+      if(opts.tipFor && entries.length){
+        (function(ds,entries){
+          attachTip(cell, function(box){
+            box.appendChild(el("div","tiphead", dayLabel(ds)));
+            entries.forEach(function(e){
+              var line=(opts.tipNames? (e.emp?e.emp.name+" · ":"") : "")
+                + (e.row.inT||"--:--")+" – "+(e.row.outT||"--:--")
+                + "  ·  "+fmtDur(e.min);
+              box.appendChild(el("div",null,line));
+            });
+          });
+        })(ds, entries);
+      }
+      grid.appendChild(cell);
+    }
+    var tail=(7-((lead+total)%7))%7;
+    for(var j=0;j<tail;j++) grid.appendChild(el("div","cell blank"));
+    cal.appendChild(grid);
+    return cal;
+  }
+
+  function noWorkerNotice(app){
+    var c=el("div","card");
+    c.appendChild(el("div","empty","등록된 근무자가 없습니다. ‘근무자 추가’에서 먼저 근무자를 등록해 주세요."));
+    var p=el("div","pad");
+    var b=el("button","btn","근무자 추가로 가기");
+    b.addEventListener("click", function(){ go("add"); });
+    p.appendChild(b); c.appendChild(p);
+    app.appendChild(c);
+  }
+
+  /* ===================== views ===================== */
+  function viewHome(app){
+    app.appendChild(topBar("창릉 프리미어", null, ymLabel(ymOf(new Date()))));
+    app.appendChild(el("p","lede","하고 싶은 일을 골라 주세요."));
+    var menu=el("div","menu");
+    [
+      ["handover","일일 인수인계","날짜별 현금·카드 매출과 포스기 현금을 기록합니다", true],
+      ["clock","출퇴근 기록","근무자를 누르고 출근·퇴근 시간을 적습니다", true],
+      ["schedule","근무표","한 주씩 날짜별로 근무자와 오픈·마감을 배정합니다"],
+      ["store","매장 근무 기록","달력에서 날짜를 고르면 그날 근무자와 시간이 보입니다"],
+      ["overall","전체 근무 확인","한 달 동안 누가 얼마나 일했는지 한눈에 봅니다"],
+      ["people","개인 근무 확인","근무자별 달력, 일별 기록, 월급을 확인합니다"],
+      ["add","근무자 추가","근무자를 등록하거나 지웁니다"],
+      ["admin","관리자","비밀번호 변경, 정산, 데이터 백업을 관리합니다"]
+    ].forEach(function(t){
+      var featured=t[3];
+      var b=el("button","tile"+(featured?" featured":""));
+      b.appendChild(el("span","t",t[1]));
+      b.appendChild(el("span","d",t[2]));
+      b.addEventListener("click", function(){ go(t[0]); });
+      menu.appendChild(b);
+    });
+    app.appendChild(menu);
+  }
+
+  /* ---- 매장 근무 기록 ---- */
+  function viewStore(app){
+    app.appendChild(topBar("매장 근무 기록","home"));
+    app.appendChild(monthPicker());
+    var map=dayIndex(state.ym);
+    app.appendChild(buildCalendar(state.ym, map, {
+      selected: state.selDate,
+      showHours:false,
+      onPick: function(ds){ state.selDate=ds; render(true); }
+    }));
+
+    var card=el("div","card");
+    if(!state.selDate){
+      card.appendChild(el("div","empty","달력에서 날짜를 누르면 그날 일한 근무자가 여기에 나옵니다."));
+      app.appendChild(card); return;
+    }
+    var entries=map[state.selDate]||[];
+    var head=el("div","card-head");
+    head.appendChild(el("div","h", dayLabel(state.selDate)));
+    var total=0; entries.forEach(function(e){ if(e.min!==null) total+=e.min; });
+    head.appendChild(el("div","sum", entries.length? "합계 "+fmtDur(total) : ""));
+    card.appendChild(head);
+
+    if(!entries.length){
+      card.appendChild(el("div","empty","이 날은 근무 기록이 없습니다."));
+    }else{
+      var wrap=el("div","table-wrap");
+      var table=document.createElement("table");
+      table.innerHTML="<thead><tr><th>근무자</th><th>출근</th><th>퇴근</th><th class='num'>근무 시간</th></tr></thead>";
+      var tb=document.createElement("tbody");
+      entries.forEach(function(e){
+        var tr=document.createElement("tr");
+        tr.appendChild(el("td",null, e.emp? e.emp.name : "삭제된 근무자"));
+        tr.appendChild(el("td",null, e.row.inT||"—"));
+        tr.appendChild(el("td",null, e.row.outT||"—"));
+        tr.appendChild(el("td","num dur", fmtDur(e.min)));
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb); wrap.appendChild(table); card.appendChild(wrap);
+    }
+    app.appendChild(card);
+  }
+
+  /* ---- 출퇴근 기록 ---- */
+  function viewClock(app){
+    app.appendChild(topBar("출퇴근 기록","home"));
+    if(!activeEmployees().length){ noWorkerNotice(app); return; }
+
+    app.appendChild(monthPicker());
+    app.appendChild(el("p","lede","근무자를 고른 뒤, 날짜와 출근·퇴근 시간을 적고 ‘기록 추가’를 누르면 저장됩니다."));
+    var chips=el("div","chips");
+    activeEmployees().forEach(function(emp){
+      var b=el("button","chip"+(state.clockEmp===emp.id?" on":""), emp.name);
+      b.addEventListener("click", function(){ pickWorker(emp); });
+      chips.appendChild(b);
+    });
+    app.appendChild(chips);
+
+    if(!state.clockEmp) return;
+    var emp=empById(state.clockEmp);
+    if(!emp || emp.active===false) return;
+
+    var ym=state.ym;
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h", emp.name));
+    head.appendChild(el("div","m", ymLabel(ym)+" 기록"));
+    head.appendChild(el("div","sum","합계 "+fmtDur(monthTotal(ym, emp.id))));
+    card.appendChild(head);
+
+    card.appendChild(buildAddForm(emp, ym));
+
+    var rows=sortRows(rowsOf(ym, emp.id));
+    if(rows.length){
+      var wrap=el("div","table-wrap");
+      var table=document.createElement("table");
+      table.innerHTML="<thead><tr><th>날짜</th><th>출근</th><th>퇴근</th><th class='num'>근무 시간</th><th class='act'></th></tr></thead>";
+      var tb=document.createElement("tbody");
+      rows.forEach(function(r){ tb.appendChild(clockRow(emp, r, ym)); });
+      table.appendChild(tb); wrap.appendChild(table); card.appendChild(wrap);
+    }else{
+      card.appendChild(el("div","empty", ymLabel(ym)+"에는 아직 기록이 없습니다."));
+    }
+    app.appendChild(card);
+  }
+
+  function buildAddForm(emp, ym){
+    var draft={ date: (ymOfDate(todayStr())===ym ? todayStr() : ym+"-01"), inT:"", outT:"" };
+    var wrap=el("div","addrow");
+    wrap.appendChild(el("div","addlabel","새 기록 (900, 9:00, 0900 모두 09:00으로 정리됩니다)"));
+
+    var line=el("div","addline");
+
+    var dateBtn=document.createElement("button");
+    dateBtn.type="button"; dateBtn.className="ti datebtn";
+    dateBtn.textContent=dayLabel(draft.date);
+    dateBtn.addEventListener("click", function(){
+      openDatePicker(dateBtn, draft.date, function(ds){ draft.date=ds; dateBtn.textContent=dayLabel(ds); });
+    });
+    line.appendChild(dateBtn);
+
+    var durOut=el("span","adddur","—");
+    function updatePreview(){
+      durOut.textContent=fmtDur(worked({ inT: normalizeTime(inI.value), outT: normalizeTime(outI.value) }));
+    }
+    function commitIn(){ draft.inT=normalizeTime(inI.value); inI.value=draft.inT; updatePreview(); }
+    function commitOut(){ draft.outT=normalizeTime(outI.value); outI.value=draft.outT; updatePreview(); }
+    var inI=timeField(draft.inT, commitIn, updatePreview);
+    var outI=timeField(draft.outT, commitOut, updatePreview);
+
+    line.appendChild(el("span","addsep","출근"));
+    line.appendChild(inI);
+    line.appendChild(el("span","addsep","퇴근"));
+    line.appendChild(outI);
+    line.appendChild(durOut);
+    wrap.appendChild(line);
+
+    var addBtn=el("button","btn","기록 추가");
+    addBtn.type="button";
+    addBtn.addEventListener("click", function(){
+      draft.inT=normalizeTime(inI.value); draft.outT=normalizeTime(outI.value);
+      if(!draft.date){ setStatus("날짜를 먼저 선택해 주세요.", true); return; }
+      var newRow={ id:uid(), date:draft.date, inT:draft.inT, outT:draft.outT };
+      setRows(ym, emp.id, rowsOf(ym, emp.id).concat([newRow]));
+      saveMonth(ym, emp.id);
+      setStatus("");
+      render(true);
+    });
+    wrap.appendChild(addBtn);
+    return wrap;
+  }
+
+  function clockRow(emp, row, ym){
+    var tr=document.createElement("tr");
+
+    // 날짜: 글자로 보여주고, 옆의 ✎ 버튼으로 달력 팝업을 열어 고른다
+    var tdDate=document.createElement("td");
+    var dateSpan=el("span",null, row.date? dayLabel(row.date) : "날짜 없음");
+    var ed=el("button","rowdel","✎"); ed.type="button"; ed.title="날짜 수정"; ed.setAttribute("aria-label","날짜 수정");
+    ed.addEventListener("click", function(e){
+      e.stopPropagation();
+      openDatePicker(ed, row.date, function(ds){ changeDate(emp, row, ym, ds); });
+    });
+    tdDate.appendChild(dateSpan); tdDate.appendChild(ed);
+
+    var tdDur=el("td","num dur", fmtDur(worked(row)));
+
+    function onTime(){
+      row.inT=normalizeTime(inI.value); row.outT=normalizeTime(outI.value);
+      inI.value=row.inT; outI.value=row.outT;
+      tdDur.textContent=fmtDur(worked(row));
+      saveMonth(ym, emp.id);
+      var sum=tr.closest(".card").querySelector(".card-head .sum");
+      if(sum) sum.textContent="합계 "+fmtDur(monthTotal(ym, emp.id));
+    }
+    function previewTime(){
+      var m=worked({ inT: normalizeTime(inI.value), outT: normalizeTime(outI.value) });
+      tdDur.textContent=fmtDur(m);
+    }
+    var inI=timeField(row.inT, onTime, previewTime), outI=timeField(row.outT, onTime, previewTime);
+    var tdIn=document.createElement("td"); tdIn.appendChild(inI);
+    var tdOut=document.createElement("td"); tdOut.appendChild(outI);
+
+    var tdAct=el("td","act");
+    var del=el("button","rowdel","×"); del.title="이 기록 지우기"; del.setAttribute("aria-label","이 기록 지우기");
+    del.addEventListener("click", function(){
+      setRows(ym, emp.id, rowsOf(ym, emp.id).filter(function(r){ return r.id!==row.id; }));
+      saveMonth(ym, emp.id); render(true);
+    });
+    tdAct.appendChild(del);
+
+    tr.appendChild(tdDate); tr.appendChild(tdIn); tr.appendChild(tdOut);
+    tr.appendChild(tdDur); tr.appendChild(tdAct);
+    return tr;
+  }
+
+  function changeDate(emp, row, ym, newDate){
+    if(!newDate) return;
+    var newYm=ymOfDate(newDate);
+    if(newYm===ym){
+      row.date=newDate; saveMonth(ym, emp.id); render(true); return;
+    }
+    // 다른 달로 옮기기
+    setRows(ym, emp.id, rowsOf(ym, emp.id).filter(function(r){ return r.id!==row.id; }));
+    saveMonth(ym, emp.id);
+    ensureMonth(newYm).then(function(){
+      var moved={ id:row.id, date:newDate, inT:row.inT, outT:row.outT };
+      setRows(newYm, emp.id, rowsOf(newYm, emp.id).concat([moved]));
+      return saveMonth(newYm, emp.id);
+    }).then(function(){ render(true); });
+  }
+
+  function pickWorker(emp){
+    state.clockEmp=emp.id;
+    subscribe(state.ym);
+    render(true);
+  }
+
+  /* ---- 전체 근무 확인 ---- */
+  function viewOverall(app){
+    app.appendChild(topBar("전체 근무 확인","home"));
+    app.appendChild(monthPicker());
+    if(!state.employees.length){ noWorkerNotice(app); return; }
+
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h", ymLabel(state.ym)+" 근무 합계"));
+    var grand=0;
+    state.employees.forEach(function(e){ grand+=monthTotal(state.ym, e.id); });
+    head.appendChild(el("div","sum","전체 "+fmtDur(grand)));
+    card.appendChild(head);
+
+    var worked_=state.employees.filter(function(e){ return rowsOf(state.ym,e.id).length>0; });
+    if(!worked_.length){
+      card.appendChild(el("div","empty","이 달에는 근무 기록이 없습니다."));
+      app.appendChild(card); return;
+    }
+
+    var wrap=el("div","table-wrap");
+    var table=document.createElement("table");
+    table.innerHTML="<thead><tr><th>근무자</th><th class='num'>근무일</th><th class='num'>총 근무 시간</th></tr></thead>";
+    var tb=document.createElement("tbody");
+    worked_.forEach(function(emp){
+      var map=dayIndex(state.ym, [emp.id]);
+      var days=Object.keys(map).length;
+      var tr=document.createElement("tr");
+      tr.appendChild(el("td",null, emp.name));
+      tr.appendChild(el("td","num", days+"일"));
+      var td=el("td","num dur");
+      var span=el("span","hoverable", fmtDur(monthTotal(state.ym, emp.id)));
+      span.tabIndex=0;
+      attachTip(span, function(box){
+        box.appendChild(el("div","tiphead", emp.name+" · "+ymLabel(state.ym)+" 근무일"));
+        box.appendChild(buildCalendar(state.ym, map, { compact:true }));
+      });
+      td.appendChild(span);
+      tr.appendChild(td);
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb); wrap.appendChild(table); card.appendChild(wrap);
+    app.appendChild(card);
+    app.appendChild(el("p","note","근무 시간에 커서를 올리면(휴대폰에서는 눌러 보면) 그 달의 근무일이 달력에 표시됩니다."));
+  }
+
+  /* ---- 개인 근무 확인: 목록 ---- */
+  function viewPeople(app){
+    app.appendChild(topBar("개인 근무 확인","home"));
+    if(!activeEmployees().length){ noWorkerNotice(app); return; }
+    app.appendChild(el("p","lede","확인할 근무자를 골라 주세요."));
+    var card=el("div","card"), list=el("div","roster");
+    activeEmployees().forEach(function(emp){
+      var item=el("div","item");
+      var link=el("button","rowlink");
+      link.appendChild(el("span","nm", emp.name));
+      link.appendChild(el("span","sm", ymLabel(state.ym)+" "+fmtDur(monthTotal(state.ym, emp.id))));
+      link.appendChild(el("span","go","보기 ›"));
+      link.addEventListener("click", function(){ go("person",{empId:emp.id}); });
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+    card.appendChild(list); app.appendChild(card);
+  }
+
+  /* ---- 개인 근무 확인: 개별 ---- */
+  function viewPerson(app){
+    var emp=empById(state.empId);
+    if(!emp || emp.active===false){ go("people"); return; }
+    app.appendChild(topBar(emp.name+" 근무 기록","people"));
+    app.appendChild(monthPicker());
+
+    var map=dayIndex(state.ym, [emp.id]);
+    app.appendChild(buildCalendar(state.ym, map, {
+      showNames:false, tipFor:true, tipNames:false
+    }));
+    app.appendChild(el("p","note","색이 칠해진 날이 근무한 날입니다. 그 날에 커서를 올리면 시간과 근무량이 나옵니다."));
+
+    // 일별 기록
+    var rows=sortRows(rowsOf(state.ym, emp.id));
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","일별 기록"));
+    head.appendChild(el("div","m", Object.keys(map).length+"일 근무"));
+    card.appendChild(head);
+    if(!rows.length){
+      card.appendChild(el("div","empty","이 달의 기록이 없습니다."));
+    }else{
+      var wrap=el("div","table-wrap");
+      var table=document.createElement("table");
+      table.innerHTML="<thead><tr><th>날짜</th><th>출근</th><th>퇴근</th><th class='num'>그 날 근무 시간</th></tr></thead>";
+      var tb=document.createElement("tbody");
+      rows.forEach(function(r){
+        var tr=document.createElement("tr");
+        tr.appendChild(el("td",null, r.date? dayLabel(r.date):"—"));
+        tr.appendChild(el("td",null, r.inT||"—"));
+        tr.appendChild(el("td",null, r.outT||"—"));
+        tr.appendChild(el("td","num dur", fmtDur(worked(r))));
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb); wrap.appendChild(table); card.appendChild(wrap);
+    }
+    app.appendChild(card);
+
+    // 월 합계 + 시급 → 월급
+    var total=monthTotal(state.ym, emp.id);
+    var pay=el("div","card"), pad=el("div","pad");
+    var line=el("div","bigline");
+    var big=el("div","bignum");
+    big.appendChild(document.createTextNode(String(Math.floor(total/60))));
+    var s1=el("span",null,"시간"); big.appendChild(s1);
+    if(total%60){
+      big.appendChild(document.createTextNode(" "+(total%60)));
+      big.appendChild(el("span",null,"분"));
+    }
+    line.appendChild(big);
+    line.appendChild(el("div","m", ymLabel(state.ym)+" 총 근무 시간"));
+    pad.appendChild(line);
+
+    var field=el("div","field");
+    field.style.marginTop="14px";
+    var lb=document.createElement("label"); lb.textContent="시급"; lb.setAttribute("for","wage");
+    var wi=document.createElement("input");
+    wi.className="ti"; wi.id="wage"; wi.type="number"; wi.min="0"; wi.step="10";
+    wi.placeholder="예: 10320"; wi.style.width="140px";
+    wi.value="";   // 개인 근무 확인은 들어갈 때마다 시급을 새로 입력해야 한다
+    var out=el("div","bigline");
+    var payNum=el("div","bignum");
+    var payNote=el("div","m","예상 월급");
+    out.appendChild(payNum); out.appendChild(payNote);
+
+    function paintPay(){
+      var w=parseFloat(wi.value);
+      if(!w || w<=0 || !total){
+        payNum.textContent="—";
+        payNote.textContent= total? "시급을 적으면 월급이 계산됩니다" : "근무 기록이 없습니다";
+        return;
+      }
+      var won=Math.floor(total/60*w);
+      payNum.textContent="";
+      payNum.appendChild(document.createTextNode(won.toLocaleString("ko-KR")));
+      payNum.appendChild(el("span",null,"원"));
+      payNote.textContent=ymLabel(state.ym)+" 예상 급여 (시급 "+w.toLocaleString("ko-KR")+"원 기준)";
+    }
+    var t=null;
+    wi.addEventListener("input", function(){
+      paintPay();
+      clearTimeout(t);
+      t=setTimeout(function(){
+        var w=parseFloat(wi.value);
+        emp.wage = (w>0? w : null);
+        state.employees=state.employees.map(function(e){ return e.id===emp.id? emp : e; });
+        saveEmployees();
+      }, 500);
+    });
+    field.appendChild(lb); field.appendChild(wi);
+    pad.appendChild(field);
+    out.style.marginTop="10px";
+    pad.appendChild(out);
+    paintPay();
+    pay.appendChild(pad);
+    app.appendChild(pay);
+    app.appendChild(el("p","note","세금이나 주휴수당은 포함되지 않은 단순 계산입니다."));
+  }
+
+  /* ---- 근무자 추가 ---- */
+  function viewAdd(app){
+    app.appendChild(topBar("근무자 추가","home"));
+    var card=el("div","card"), pad=el("div","pad");
+    var field=el("div","field");
+    var input=document.createElement("input");
+    input.className="ti"; input.type="text"; input.placeholder="근무자 이름";
+    input.maxLength=20; input.autocomplete="off"; input.style.flex="1 1 180px";
+    var btn=el("button","btn","근무자 추가");
+    function add(){
+      var name=input.value.trim();
+      if(!name){ input.focus(); return; }
+      state.employees=state.employees.concat([{ id:uid(), name:name, wage:null }]);
+      input.value="";
+      input.blur();
+      saveEmployees();
+      render(true);
+      var again=document.querySelector(".pad .ti");
+      if(again) again.focus();
+    }
+    btn.addEventListener("click", add);
+    input.addEventListener("keydown", function(e){ if(e.key==="Enter") add(); });
+    field.appendChild(input); field.appendChild(btn);
+    pad.appendChild(field);
+    card.appendChild(pad);
+    app.appendChild(card);
+
+    var list=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","등록된 근무자"));
+    var roster_=activeEmployees();
+    head.appendChild(el("div","m", roster_.length+"명"));
+    list.appendChild(head);
+    if(!roster_.length){
+      list.appendChild(el("div","empty","아직 등록된 근무자가 없습니다. 위에 이름을 적고 추가해 주세요."));
+    }else{
+      var roster=el("div","roster");
+      roster_.forEach(function(emp){
+        var item=el("div","item");
+        item.appendChild(el("div","nm", emp.name));
+        var x=el("button","rowdel","×");
+        x.title="삭제"; x.setAttribute("aria-label", emp.name+" 삭제");
+        x.style.marginLeft="auto";
+        x.addEventListener("click", function(){ removeEmployee(emp); });
+        item.appendChild(x);
+        roster.appendChild(item);
+      });
+      list.appendChild(roster);
+    }
+    app.appendChild(list);
+
+    if(recentRemovals.length){
+      var undoWrap=el("div","undowrap");
+      undoWrap.appendChild(el("div","undotitle","최근 삭제한 근무자"));
+      recentRemovals.forEach(function(entry){
+        var row=el("div","undorow");
+        row.appendChild(el("span","undoname", entry.name));
+        var undoBtn=el("button","link","되돌리기");
+        undoBtn.type="button";
+        undoBtn.addEventListener("click", function(){ undoRemove(entry.id); });
+        var dismissBtn=el("button","rowdel","×");
+        dismissBtn.type="button"; dismissBtn.title="이 알림 닫기";
+        dismissBtn.setAttribute("aria-label", entry.name+" 되돌리기 알림 닫기");
+        dismissBtn.addEventListener("click", function(){ dismissRemoval(entry.id); });
+        row.appendChild(undoBtn); row.appendChild(dismissBtn);
+        undoWrap.appendChild(row);
+      });
+      app.appendChild(undoWrap);
+    }
+  }
+
+  // 되돌리기 목록 — id/이름만 담은 스냅샷이라 서버 동기화로 직원 객체가 새로 만들어져도 안전하고,
+  // 로컬에 저장해서 페이지를 오가거나 새로고침해도 되돌리기·닫기(×) 전까지 계속 남아 있다.
+  var recentRemovals=(function(){
+    try{ return JSON.parse(localStorage.getItem(RECENT_REMOVED_KEY)||"[]"); }
+    catch(e){ return []; }
+  })();
+  function persistRecentRemovals(){
+    try{ localStorage.setItem(RECENT_REMOVED_KEY, JSON.stringify(recentRemovals)); }catch(e){}
+  }
+  function removeEmployee(emp){
+    removedIds.add(emp.id);
+    persistRemovedIds();
+    emp.active=false;
+    state.employees=state.employees.map(function(e){ return e.id===emp.id? emp : e; });
+    if(state.clockEmp===emp.id) state.clockEmp=null;
+    if(!recentRemovals.some(function(e){ return e.id===emp.id; })){
+      recentRemovals.unshift({ id: emp.id, name: emp.name });
+      persistRecentRemovals();
+    }
+    render(true);
+    try{ saveEmployees(); }catch(e){ console.error(e); setStatus("서버 저장에는 실패했지만 이 화면에서는 계속 삭제된 상태로 유지됩니다.", true); }
+  }
+  function undoRemove(id){
+    removedIds.delete(id);
+    persistRemovedIds();
+    var emp=empById(id);
+    if(emp){
+      emp.active=true;
+      state.employees=state.employees.map(function(e){ return e.id===id? emp : e; });
+    }
+    recentRemovals=recentRemovals.filter(function(e){ return e.id!==id; });
+    persistRecentRemovals();
+    render(true);
+    try{ saveEmployees(); }catch(e){ console.error(e); setStatus("저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", true); }
+  }
+  function dismissRemoval(id){
+    recentRemovals=recentRemovals.filter(function(e){ return e.id!==id; });
+    persistRecentRemovals();
+    render(true);
+  }
+
+  /* ---- 일일 인수인계 ---- */
+  function fmtWon(n){
+    return Math.round(n||0).toLocaleString("ko-KR")+"원";
+  }
+  function numberField(value){
+    var i=document.createElement("input");
+    i.type="number"; i.className="ti hoNum"; i.min="0"; i.step="1";
+    i.inputMode="numeric"; i.placeholder="0";
+    if(value!=null) i.value=value;
+    return i;
+  }
+  function handoverDayMap(ym){
+    var map={};
+    rowsOfHandover(ym).forEach(function(r){
+      if(!r.date) return;
+      var e=map[r.date]=(map[r.date]||{cash:0,card:0,posCash:0,count:0});
+      e.cash+=r.cash||0; e.card+=r.card||0; e.posCash+=r.posCash||0; e.count+=1;
+    });
+    return map;
+  }
+  function buildHandoverCalendar(ym, map, opts){
+    opts=opts||{};
+    var cal=el("div","cal");
+    var dow=el("div","dow");
+    ["일","월","화","수","목","금","토"].forEach(function(d){ dow.appendChild(el("div",null,d)); });
+    cal.appendChild(dow);
+    var grid=el("div","grid");
+    var lead=firstDow(ym), total=daysInMonth(ym), today=todayStr();
+    for(var i=0;i<lead;i++) grid.appendChild(el("div","cell blank"));
+    for(var d=1; d<=total; d++){
+      var ds=ym+"-"+pad(d);
+      var entry=map[ds];
+      var dowIdx=(lead+d-1)%7;
+      var cell=document.createElement("button");
+      cell.type="button";
+      cell.className="cell"+(dowIdx===0?" sun":"")+(dowIdx===6?" sat":"")
+        +(entry?" worked":"")+(ds===today?" today":"")+(opts.selected===ds?" sel":"");
+      cell.appendChild(el("div","num",String(d)));
+      if(entry) cell.appendChild(el("div","hrs", fmtWon(entry.cash+entry.card)));
+      if(opts.onPick){ (function(ds){ cell.addEventListener("click", function(){ opts.onPick(ds); }); })(ds); }
+      grid.appendChild(cell);
+    }
+    var tail=(7-((lead+total)%7))%7;
+    for(var j=0;j<tail;j++) grid.appendChild(el("div","cell blank"));
+    cal.appendChild(grid);
+    return cal;
+  }
+  function buildSalesChart(ym, map){
+    var total=daysInMonth(ym);
+    var days=[];
+    for(var d=1; d<=total; d++){
+      var ds=ym+"-"+pad(d);
+      var entry=map[ds];
+      days.push({
+        ds:ds, d:d,
+        cash: entry? entry.cash:0,
+        card: entry? entry.card:0,
+        sum: entry? (entry.cash+entry.card):0,
+        has: !!entry
+      });
+    }
+    var wrap=el("div","saleschart");
+    var any=days.some(function(x){ return x.has; });
+    if(!any){
+      wrap.appendChild(el("div","empty","표시할 기록이 없습니다."));
+      return wrap;
+    }
+    var maxV=1;
+    days.forEach(function(x){ maxV=Math.max(maxV, x.sum); });
+
+    // 카드 너비 전체를 채우도록 고정된 좌표계(뷰박스)를 쓰고, viewBox 폭을 날짜 수에 맞춰 나눈다.
+    // 글자는 SVG 안에 넣지 않는다 — none 비율로 늘리면 숫자가 옆으로 찌그러져 가독성이 떨어진다.
+    var W=1000, H=190;
+    var padL=6, padR=6, padT=10, padB=6;
+    var plotW=W-padL-padR, plotH=H-padT-padB;
+    var n=days.length;
+    var slot=plotW/n;
+    var barW=Math.max(2, slot*0.62);
+    var gap=(slot-barW)/2;
+
+    var parts=[];
+    // 격자선(0%, 50%, 100%)
+    [0,0.5,1].forEach(function(f){
+      var y=padT+plotH*(1-f);
+      parts.push('<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--rule)" stroke-width="1"/>');
+    });
+
+    days.forEach(function(x,i){
+      if(!x.has) return;
+      var x0=padL+i*slot+gap;
+      var h=Math.max(2, Math.round((x.sum/maxV)*plotH));
+      var y=padT+plotH-h;
+      var titleText=x.d+"일\n현금 매출 "+fmtWon(x.cash)+"\n카드 매출 "+fmtWon(x.card)+"\n합계 매출 "+fmtWon(x.sum);
+      parts.push('<g><title>'+titleText+'</title><rect x="'+x0.toFixed(1)+'" y="'+y+'" width="'+barW.toFixed(1)+'" height="'+h+'" rx="2" fill="var(--accent)"></rect></g>');
+    });
+
+    var svgHtml='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="일별 매출 그래프">'+parts.join('')+'</svg>';
+    wrap.innerHTML=svgHtml;
+
+    // 날짜 숫자는 일반 HTML 로, 그래프와 같은 칸 나누기로 아래에 맞춰 그린다 (1일·말일은 항상, 그 사이는 5일 간격)
+    var labels=el("div","chartlabels");
+    days.forEach(function(x){
+      var show = (x.d===1 || x.d===n || x.d%5===0);
+      labels.appendChild(el("span",null, show? String(x.d) : ""));
+    });
+    wrap.appendChild(labels);
+    return wrap;
+  }
+  function viewHandover(app){
+    app.appendChild(topBar("일일 인수인계","home"));
+    app.appendChild(monthPicker());
+
+    var ym=state.ym;
+    var map=handoverDayMap(ym);
+    var draft={ date: (ymOfDate(todayStr())===ym ? todayStr() : ym+"-01") };
+    var dateBtn=document.createElement("button");
+    dateBtn.type="button"; dateBtn.className="ti datebtn";
+
+    app.appendChild(buildHandoverCalendar(ym, map, {
+      selected: draft.date,
+      onPick: function(ds){ draft.date=ds; dateBtn.textContent=dayLabel(ds); }
+    }));
+
+    var mtdTotal=0;
+    var today=todayStr();
+    rowsOfHandover(ym).forEach(function(r){
+      if(r.date && r.date<=today) mtdTotal+=(r.cash||0)+(r.card||0);
+    });
+
+    var chartHead=el("div","card-head");
+    chartHead.appendChild(el("div","h","일별 매출"));
+    chartHead.appendChild(el("div","sum", fmtWon(mtdTotal)+" · "+ymLabel(ym)+" 현재까지"));
+    var chartCard=el("div","card");
+    chartCard.appendChild(chartHead);
+    var chartPad=el("div","pad");
+    chartPad.appendChild(buildSalesChart(ym, map));
+    chartCard.appendChild(chartPad);
+    app.appendChild(chartCard);
+
+    app.appendChild(el("p","lede","날짜를 고르고 현금·카드 매출과 포스기 현금을 적은 뒤 ‘추가하기’를 누르면 목록에 쌓입니다."));
+
+    var form=el("div","addrow");
+    form.appendChild(el("div","addlabel","새 인수인계 기록"));
+    var line=el("div","addline");
+    dateBtn.textContent=dayLabel(draft.date);
+    dateBtn.addEventListener("click", function(){
+      openDatePicker(dateBtn, draft.date, function(ds){ draft.date=ds; dateBtn.textContent=dayLabel(ds); });
+    });
+    line.appendChild(dateBtn);
+
+    line.appendChild(el("span","addsep","현금 매출"));
+    var cashI=numberField(null); line.appendChild(cashI);
+    line.appendChild(el("span","addsep","카드 매출"));
+    var cardI=numberField(null); line.appendChild(cardI);
+    line.appendChild(el("span","addsep","포스기 현금"));
+    var posI=numberField(null); line.appendChild(posI);
+    form.appendChild(line);
+
+    var addBtn=el("button","btn","추가하기");
+    addBtn.type="button";
+    addBtn.addEventListener("click", function(){
+      if(!draft.date){ setStatus("날짜를 먼저 선택해 주세요.", true); return; }
+      var row={
+        id: uid(), date: draft.date,
+        cash: parseFloat(cashI.value)||0,
+        card: parseFloat(cardI.value)||0,
+        posCash: parseFloat(posI.value)||0
+      };
+      setHandoverRows(ym, rowsOfHandover(ym).concat([row]));
+      saveHandover(ym);
+      setStatus("");
+      render(true);
+    });
+    form.appendChild(addBtn);
+    app.appendChild(form);
+
+    var rows=rowsOfHandover(ym).slice().sort(function(a,b){ return (a.date||"").localeCompare(b.date||""); });
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h", ymLabel(ym)+" 인수인계 기록"));
+    head.appendChild(el("div","m", rows.length+"건"));
+    card.appendChild(head);
+
+    if(!rows.length){
+      card.appendChild(el("div","empty","이 달의 인수인계 기록이 없습니다."));
+    }else{
+      var wrap=el("div","table-wrap");
+      var table=document.createElement("table");
+      table.innerHTML="<thead><tr><th>날짜</th><th class='num'>현금 매출</th><th class='num'>카드 매출</th>"
+        +"<th class='num'>포스기 현금</th><th class='num'>합계(현금+카드)</th><th class='act'></th></tr></thead>";
+      var tb=document.createElement("tbody");
+      var sumCash=0, sumCard=0, sumPos=0;
+      rows.forEach(function(r){
+        sumCash+=r.cash||0; sumCard+=r.card||0; sumPos+=r.posCash||0;
+        var tr=document.createElement("tr");
+        tr.appendChild(el("td",null, r.date? dayLabel(r.date):"—"));
+        tr.appendChild(el("td","num", fmtWon(r.cash)));
+        tr.appendChild(el("td","num", fmtWon(r.card)));
+        tr.appendChild(el("td","num", fmtWon(r.posCash)));
+        tr.appendChild(el("td","num dur", fmtWon((r.cash||0)+(r.card||0))));
+        var tdAct=el("td","act");
+        var del=el("button","rowdel","×"); del.type="button";
+        del.title="이 기록 지우기"; del.setAttribute("aria-label","이 기록 지우기");
+        del.addEventListener("click", function(){
+          setHandoverRows(ym, rowsOfHandover(ym).filter(function(x){ return x.id!==r.id; }));
+          saveHandover(ym);
+          render(true);
+        });
+        tdAct.appendChild(del);
+        tr.appendChild(tdAct);
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb);
+      var tf=document.createElement("tfoot");
+      var ftr=document.createElement("tr");
+      ftr.appendChild(el("td","sumlabel","합계"));
+      ftr.appendChild(el("td","num sumval", fmtWon(sumCash)));
+      ftr.appendChild(el("td","num sumval", fmtWon(sumCard)));
+      ftr.appendChild(el("td","num sumval", fmtWon(sumPos)));
+      ftr.appendChild(el("td","num sumval", fmtWon(sumCash+sumCard)));
+      ftr.appendChild(el("td",null,""));
+      tf.appendChild(ftr);
+      table.appendChild(tf);
+      wrap.appendChild(table); card.appendChild(wrap);
+    }
+    app.appendChild(card);
+  }
+
+  /* ---- 근무표 ---- */
+  function viewSchedule(app){
+    app.appendChild(topBar("근무표","home"));
+    app.appendChild(weekPicker());
+    app.appendChild(coffeeToggle());
+    if(!activeEmployees().length){ noWorkerNotice(app); return; }
+
+    var weekStart=state.schedWeek;
+    var days=[];
+    for(var i=0;i<7;i++) days.push(addDaysStr(weekStart,i));
+
+    app.appendChild(buildWeekGrid(weekStart, days));
+
+    if(state.schedSelDate && days.indexOf(state.schedSelDate)>=0){
+      appendDayEditor(app, weekStart, state.schedSelDate);
+    }else{
+      var note=el("div","card");
+      note.appendChild(el("div","empty","표에서 날짜를 누르면 근무자를 배정할 수 있습니다."));
+      app.appendChild(note);
+    }
+
+    appendWeeklySummary(app, weekStart, days);
+  }
+
+  function appendDayEditor(app, weekStart, ds){
+    var entries=scheduleDayEntries(weekStart, ds);
+    var assignedIds=entries.map(function(e){ return e.empId; });
+
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h", dayLabel(ds)+" 배정"));
+    card.appendChild(head);
+    var pad=el("div","pad");
+
+    var sorted=sortedDayEntries(entries);
+    if(sorted.length){
+      var list=el("div","assignlist");
+      sorted.forEach(function(entry){
+        var emp=empById(entry.empId);
+        var row=el("div","assignrow");
+
+        var top=el("div","assigntop");
+        top.appendChild(el("span","aname", emp? emp.name : "삭제된 근무자"));
+        var roleWrap=el("div","rolebtns");
+        var openBtn=el("button","rolebtn"+(entry.role==="open"?" on":""),"오픈"); openBtn.type="button";
+        var closeBtn=el("button","rolebtn"+(entry.role==="close"?" on":""),"마감"); closeBtn.type="button";
+        openBtn.addEventListener("click", function(){ setRole(entry.empId, entry.role==="open"? null : "open"); });
+        closeBtn.addEventListener("click", function(){ setRole(entry.empId, entry.role==="close"? null : "close"); });
+        roleWrap.appendChild(openBtn); roleWrap.appendChild(closeBtn);
+        top.appendChild(roleWrap);
+        var rm=el("button","rowdel","×"); rm.type="button"; rm.title="제외";
+        rm.setAttribute("aria-label", (emp?emp.name:"")+" 제외");
+        rm.addEventListener("click", function(){ removeFromDay(entry.empId); });
+        top.appendChild(rm);
+        row.appendChild(top);
+
+        var timeLine=el("div","assigntime");
+        var inI=null, outI=null;
+        if(entry.role!=="open"){
+          timeLine.appendChild(el("span","addsep","출근"));
+          inI=timeField(entry.inT, commitTime);
+          timeLine.appendChild(inI);
+        }
+        if(entry.role!=="close"){
+          timeLine.appendChild(el("span","addsep","퇴근"));
+          outI=timeField(entry.outT, commitTime);
+          timeLine.appendChild(outI);
+        }
+        row.appendChild(timeLine);
+        function commitTime(){
+          var newIn = entry.role==="open" ? "" : normalizeTime(inI.value);
+          var newOut = entry.role==="close" ? "" : normalizeTime(outI.value);
+          setTime(entry.empId, newIn, newOut);
+        }
+
+        list.appendChild(row);
+      });
+      pad.appendChild(list);
+    }else{
+      pad.appendChild(el("div","empty","아직 배정된 근무자가 없습니다."));
+    }
+
+    var rest=activeEmployees().filter(function(e){ return assignedIds.indexOf(e.id)<0; });
+    if(rest.length){
+      pad.appendChild(el("div","addlabel","근무자 추가"));
+      var chips=el("div","chips");
+      rest.forEach(function(emp){
+        var b=el("button","chip", emp.name);
+        b.addEventListener("click", function(){ addToDay(emp.id); });
+        chips.appendChild(b);
+      });
+      pad.appendChild(chips);
+    }
+
+    card.appendChild(pad);
+    app.appendChild(card);
+
+    function persist(newEntries){
+      setScheduleDayEntries(weekStart, ds, newEntries);
+      saveSchedule(weekStart);
+      render(true);
+    }
+    function addToDay(empId){ persist(entries.concat([{ empId:empId, role:null, inT:"", outT:"" }])); }
+    function removeFromDay(empId){ persist(entries.filter(function(e){ return e.empId!==empId; })); }
+    function setRole(empId, role){
+      persist(entries.map(function(e){
+        if(e.empId!==empId) return e;
+        var inT=e.inT, outT=e.outT;
+        if(role==="open") inT="";
+        if(role==="close") outT="";
+        return { empId:empId, role:role, inT:inT, outT:outT };
+      }));
+    }
+    function setTime(empId, inT, outT){
+      persist(entries.map(function(e){ return e.empId===empId? { empId:empId, role:e.role, inT:inT, outT:outT } : e; }));
+    }
+  }
+
+  function appendWeeklySummary(app, weekStart, days){
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","근무자별 이번 주 배정"));
+    card.appendChild(head);
+    var pad=el("div","pad");
+
+    var chips=el("div","chips");
+    activeEmployees().forEach(function(emp){
+      var b=el("button","chip"+(state.schedSummaryEmp===emp.id?" on":""), emp.name);
+      b.addEventListener("click", function(){
+        state.schedSummaryEmp=(state.schedSummaryEmp===emp.id)? null : emp.id;
+        render(true);
+      });
+      chips.appendChild(b);
+    });
+    pad.appendChild(chips);
+
+    if(state.schedSummaryEmp){
+      var emp=empById(state.schedSummaryEmp);
+      var hasAny=false;
+      days.forEach(function(ds){
+        scheduleDayEntries(weekStart, ds).forEach(function(e){ if(e.empId===state.schedSummaryEmp) hasAny=true; });
+      });
+
+      var detail=el("div","summarydetail");
+      detail.appendChild(el("div","addlabel", (emp?emp.name:"")+"님의 이번 주 근무표"));
+
+      if(!hasAny){
+        detail.appendChild(el("div","empty", (emp?emp.name:"")+" 님은 이번 주 근무가 없습니다."));
+      }else{
+        var personGrid=buildPersonWeekGrid(weekStart, days, state.schedSummaryEmp, emp);
+        detail.appendChild(personGrid);
+
+        var copyBtn=el("button","btn ghost","복사하기"); copyBtn.type="button";
+        copyBtn.style.marginTop="10px";
+        var copyMsg=el("p","status","");
+        copyBtn.addEventListener("click", function(){
+          captureAndCopy(personGrid, (emp?emp.name:"근무자")+"_근무표", copyMsg);
+        });
+        detail.appendChild(copyBtn);
+        detail.appendChild(copyMsg);
+      }
+      pad.appendChild(detail);
+    }
+
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
+  function buildPersonWeekGrid(weekStart, days, empId, emp){
+    var grid=el("div","personweek");
+    var today=todayStr();
+    grid.appendChild(el("div","personweekdate", weekRangeLabel(weekStart)));
+    var body=el("div","personweekbody");
+    body.appendChild(el("div","personweekname", emp?emp.name:""));
+    var row=el("div","personweekrow");
+    days.forEach(function(ds,i){
+      var found=null;
+      scheduleDayEntries(weekStart, ds).forEach(function(e){ if(e.empId===empId) found=e; });
+      var d=parseDateStr(ds);
+      var cell=el("div","cell wcell"+(i===0?" sun":"")+(i===6?" sat":"")+(found?" worked":"")+(ds===today?" today":""));
+      cell.appendChild(el("div","wdow","일월화수목금토"[i]));
+      cell.appendChild(el("div","coffeebadge", coffeeLabel(i)));
+      cell.appendChild(el("div","num", (d.getMonth()+1)+"/"+d.getDate()));
+      if(found){
+        var tr=timeRangeText(found);
+        cell.appendChild(el("div","wname", tr || (found.role==="open"?"오픈":found.role==="close"?"마감":"근무")));
+      }else{
+        cell.appendChild(el("div","wname off","휴무"));
+      }
+      row.appendChild(cell);
+    });
+    body.appendChild(row);
+    grid.appendChild(body);
+    return grid;
+  }
+
+  function captureAndCopy(target, filenameBase, msgEl){
+    if(typeof html2canvas!=="function"){
+      msgEl.textContent="이미지 캡처 기능을 사용할 수 없습니다.";
+      msgEl.className="status warn";
+      return;
+    }
+    msgEl.textContent="이미지를 만드는 중...";
+    msgEl.className="status";
+    var bg=getComputedStyle(document.body).backgroundColor || "#ffffff";
+    html2canvas(target, { backgroundColor: bg, scale: 2 }).then(function(canvas){
+      canvas.toBlob(function(blob){
+        if(!blob){
+          msgEl.textContent="이미지를 만들지 못했습니다.";
+          msgEl.className="status warn";
+          return;
+        }
+        tryClipboard(blob);
+      });
+    }).catch(function(){
+      msgEl.textContent="이미지를 만들지 못했습니다.";
+      msgEl.className="status warn";
+    });
+
+    function tryClipboard(blob){
+      if(navigator.clipboard && window.ClipboardItem){
+        navigator.clipboard.write([ new ClipboardItem({ "image/png": blob }) ]).then(function(){
+          msgEl.textContent="이미지가 복사되었습니다. 카카오톡 채팅창에 붙여넣기(Ctrl/Cmd+V) 하시면 됩니다.";
+          msgEl.className="status success";
+        }).catch(function(){ fallbackSave(blob); });
+      }else{
+        fallbackSave(blob);
+      }
+    }
+    function fallbackSave(blob){
+      var filename=filenameBase.replace(/\s+/g,"_")+"_"+todayStr()+".png";
+      if(window.claude && typeof window.claude.use==="function"){
+        var reader=new FileReader();
+        reader.onload=function(){
+          window.claude.use("downloads").then(function(dl){
+            if(!dl){ plainDownload(blob, filename); return; }
+            return dl.save({ filename:filename, data:reader.result }).then(function(){
+              msgEl.textContent="클립보드 복사를 지원하지 않아 이미지 파일로 저장했습니다. 카카오톡에서 이 파일을 첨부해 주세요.";
+              msgEl.className="status success";
+            }).catch(function(){ plainDownload(blob, filename); });
+          }).catch(function(){ plainDownload(blob, filename); });
+        };
+        reader.readAsDataURL(blob);
+      }else{
+        plainDownload(blob, filename);
+      }
+    }
+    function plainDownload(blob, filename){
+      try{
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement("a");
+        a.href=url; a.download=filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+        msgEl.textContent="클립보드 복사를 지원하지 않아 이미지 파일로 저장했습니다. 카카오톡에서 이 파일을 첨부해 주세요.";
+        msgEl.className="status success";
+      }catch(e){
+        msgEl.textContent="이미지를 저장하지 못했습니다.";
+        msgEl.className="status warn";
+      }
+    }
+  }
+
+  /* ---- 정산 ---- */
+  function renderSettleContent(app){
+    var ym=state.ym;
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","정산"));
+    head.appendChild(el("div","m", ymLabel(ym)));
+    card.appendChild(head);
+
+    var wrap=el("div","table-wrap");
+    var table=document.createElement("table");
+    table.innerHTML="<thead><tr><th>근무자</th><th class='num'>총 근무 시간</th><th class='num'>시급</th><th class='num'>월급</th></tr></thead>";
+    var tb=document.createElement("tbody");
+    var rowRefs=[];
+
+    activeEmployees().forEach(function(emp){
+      var totalMin=monthTotal(ym, emp.id);
+      var tr=document.createElement("tr");
+      tr.appendChild(el("td",null, emp.name));
+      tr.appendChild(el("td","num", fmtDur(totalMin)));
+
+      var tdWage=el("td","num");
+      var wageI=document.createElement("input");
+      wageI.type="number"; wageI.className="ti hoNum"; wageI.min="0"; wageI.step="10";
+      wageI.placeholder="시급";
+      if(emp.wage!=null) wageI.value=emp.wage;
+      tdWage.appendChild(wageI);
+      tr.appendChild(tdWage);
+
+      var tdPay=el("td","num dur");
+      tr.appendChild(tdPay);
+      tb.appendChild(tr);
+
+      function payOf(){
+        var w=parseFloat(wageI.value);
+        return (w>0)? Math.floor(totalMin/60*w) : 0;
+      }
+      function paintRow(){
+        var w=parseFloat(wageI.value);
+        tdPay.textContent = (w>0)? fmtWon(payOf()) : "—";
+      }
+      paintRow();
+
+      var saveTimer=null;
+      wageI.addEventListener("input", function(){
+        paintRow();
+        recomputeGrand();
+        clearTimeout(saveTimer);
+        saveTimer=setTimeout(function(){
+          var w=parseFloat(wageI.value);
+          emp.wage=(w>0? w : null);
+          state.employees=state.employees.map(function(e){ return e.id===emp.id? emp : e; });
+          saveEmployees();
+        }, 500);
+      });
+
+      rowRefs.push({ payOf: payOf });
+    });
+    table.appendChild(tb);
+
+    var tf=document.createElement("tfoot");
+    var ftr=document.createElement("tr");
+    ftr.appendChild(el("td","sumlabel","합계"));
+    ftr.appendChild(el("td",null,""));
+    ftr.appendChild(el("td",null,""));
+    var grandTd=el("td","num sumval");
+    ftr.appendChild(grandTd);
+    tf.appendChild(ftr);
+    table.appendChild(tf);
+
+    function recomputeGrand(){
+      var sum=0;
+      rowRefs.forEach(function(r){ sum+=r.payOf(); });
+      grandTd.textContent=fmtWon(sum);
+    }
+    recomputeGrand();
+
+    wrap.appendChild(table);
+    card.appendChild(wrap);
+    app.appendChild(card);
+    app.appendChild(el("p","note","시급을 적으면 그 근무자의 이 달 월급이 자동으로 계산됩니다. 세금이나 주휴수당은 포함되지 않은 단순 계산입니다."));
+  }
+
+  /* ---- 관리자 ---- */
+  var ADMIN_MASTER_KEY="rhfvm";   // 숫자 비밀번호를 잊어버렸을 때를 위한, 절대 바뀌지 않는 비상용 비밀번호
+  function buildAdminGate(app, promptText){
+    var card=el("div","card");
+    var pad=el("div","pad");
+    pad.appendChild(el("p","lede", promptText||"관리자 비밀번호를 입력해 주세요."));
+
+    var field=el("div","field");
+    var pwI=document.createElement("input");
+    pwI.type="password"; pwI.className="ti"; pwI.maxLength=5; pwI.autocomplete="off"; pwI.placeholder="비밀번호";
+    var btn=el("button","btn","입장하기"); btn.type="button";
+    field.appendChild(pwI); field.appendChild(btn);
+    pad.appendChild(field);
+
+    var msg=el("p","status","");
+    pad.appendChild(msg);
+
+    function tryEnter(){
+      var v=pwI.value.trim();
+      if(v && (v===state.adminPassword || v===ADMIN_MASTER_KEY)){
+        state.adminUnlocked=true;
+        render(true);
+      }else{
+        msg.textContent="비밀번호가 올바르지 않습니다.";
+        msg.className="status warn";
+        pwI.value="";
+        pwI.focus();
+      }
+    }
+    btn.addEventListener("click", tryEnter);
+    pwI.addEventListener("keydown", function(e){ if(e.key==="Enter") tryEnter(); });
+
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
+  function viewAdmin(app){
+    if(!state.adminUnlocked){
+      app.appendChild(topBar("관리자","home"));
+      buildAdminGate(app, "관리자 비밀번호를 입력해 주세요. 초기 비밀번호는 12345입니다.");
+      return;
+    }
+
+    if(!state.adminSection){
+      app.appendChild(topBar("관리자","home"));
+      app.appendChild(el("p","lede","관리할 항목을 골라 주세요."));
+      var menu=el("div","menu");
+      [
+        ["password","관리자 비밀번호 변경","현재 비밀번호를 새 숫자 5자리로 바꿉니다"],
+        ["settle","정산","근무자별 월 근무 시간과 시급으로 월급을 계산합니다"],
+        ["backup","데이터 백업","백업 파일로 저장하거나 불러옵니다"]
+      ].forEach(function(t){
+        var b=el("button","tile");
+        b.appendChild(el("span","t",t[1]));
+        b.appendChild(el("span","d",t[2]));
+        b.addEventListener("click", function(){ state.adminSection=t[0]; render(true); });
+        menu.appendChild(b);
+      });
+      app.appendChild(menu);
+      return;
+    }
+
+    if(state.adminSection==="password"){
+      app.appendChild(topBar("관리자 비밀번호 변경","__admin_menu__"));
+      renderPasswordChangeCard(app);
+    }else if(state.adminSection==="settle"){
+      app.appendChild(topBar("정산","__admin_menu__"));
+      app.appendChild(monthPicker());
+      if(!activeEmployees().length){ noWorkerNotice(app); return; }
+      renderSettleContent(app);
+    }else if(state.adminSection==="backup"){
+      app.appendChild(topBar("데이터 백업","__admin_menu__"));
+      appendBackupSection(app);
+    }
+  }
+
+  function renderPasswordChangeCard(app){
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","관리자 비밀번호 변경"));
+    card.appendChild(head);
+
+    var pad=el("div","pad");
+    pad.appendChild(el("p","lede","숫자 5자리로 새 비밀번호를 정하고, 확인 칸에 한 번 더 똑같이 입력한 뒤 ‘설정하기’를 눌러 주세요."));
+
+    var f1=el("div","field");
+    f1.appendChild(el("label",null,"새 비밀번호"));
+    var newI=document.createElement("input");
+    newI.type="password"; newI.className="ti"; newI.inputMode="numeric";
+    newI.maxLength=5; newI.autocomplete="off"; newI.placeholder="숫자 5자리";
+    f1.appendChild(newI);
+    pad.appendChild(f1);
+
+    var f2=el("div","field");
+    f2.style.marginTop="8px";
+    f2.appendChild(el("label",null,"비밀번호 확인"));
+    var confirmI=document.createElement("input");
+    confirmI.type="password"; confirmI.className="ti"; confirmI.inputMode="numeric";
+    confirmI.maxLength=5; confirmI.autocomplete="off"; confirmI.placeholder="숫자 5자리";
+    f2.appendChild(confirmI);
+    pad.appendChild(f2);
+
+    var msg=el("p","status","");
+    var setBtn=el("button","btn","설정하기"); setBtn.type="button";
+    setBtn.style.marginTop="10px";
+    setBtn.addEventListener("click", function(){
+      var a=newI.value.trim(), b=confirmI.value.trim();
+      if(!/^[0-9]{5}$/.test(a)){
+        msg.textContent="비밀번호는 숫자 5자리로 입력해 주세요.";
+        msg.className="status warn";
+        return;
+      }
+      if(a===state.adminPassword){
+        msg.textContent="이전 비밀번호와 같습니다. 다른 비밀번호로 입력해 주세요.";
+        msg.className="status warn";
+        return;
+      }
+      if(a!==b){
+        msg.textContent="입력하신 두 비밀번호가 서로 다릅니다. 다시 확인해 주세요.";
+        msg.className="status warn";
+        confirmI.value="";
+        confirmI.focus();
+        return;
+      }
+      state.adminPassword=a;
+      saveAdminPassword();
+      newI.value=""; confirmI.value="";
+      msg.textContent="비밀번호 변경이 완료되었습니다.";
+      msg.className="status success";
+    });
+    pad.appendChild(setBtn);
+    pad.appendChild(msg);
+
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
+  function currentBackupPayload(){
+    return {
+      kind: "shift-log-backup",
+      savedAt: new Date().toISOString(),
+      employees: state.employees,
+      data: state.data,
+      handover: state.handover,
+      schedule: state.schedule,
+      coffeeFrontFirst: state.coffeeFrontFirst,
+      adminPassword: state.adminPassword,
+      removedIds: Array.from(removedIds)
+    };
+  }
+
+  function restoreFromBackup(payload){
+    if(!payload || typeof payload!=="object") throw new Error("형식이 올바르지 않습니다.");
+    state.employees = Array.isArray(payload.employees) ? payload.employees : [];
+    state.data = (payload.data && typeof payload.data==="object") ? payload.data : {};
+    state.handover = (payload.handover && typeof payload.handover==="object") ? payload.handover : {};
+    state.schedule = (payload.schedule && typeof payload.schedule==="object") ? payload.schedule : {};
+    if(typeof payload.coffeeFrontFirst==="boolean") state.coffeeFrontFirst=payload.coffeeFrontFirst;
+    if(typeof payload.adminPassword==="string" && payload.adminPassword) state.adminPassword=payload.adminPassword;
+    removedIds = new Set(Array.isArray(payload.removedIds)? payload.removedIds : []);
+    persistRemovedIds();
+    applyRemovedOverride();
+
+    saveEmployees();
+    saveAdminPassword();
+    saveCoffeeSetting();
+    var jobs=[];
+    Object.keys(state.data).forEach(function(ym){
+      Object.keys(state.data[ym]||{}).forEach(function(id){ jobs.push(saveMonth(ym,id)); });
+    });
+    Object.keys(state.handover).forEach(function(ym){ jobs.push(saveHandover(ym)); });
+    Object.keys(state.schedule).forEach(function(weekStart){ jobs.push(saveSchedule(weekStart)); });
+    return Promise.all(jobs);
+  }
+
+  function appendBackupSection(app){
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","데이터 백업"));
+    card.appendChild(head);
+    var pad=el("div","pad");
+    pad.appendChild(el("p","lede","기기를 바꾸거나, 브라우저 데이터가 지워질 수 있는 상황(시크릿 모드, 인터넷 사용 기록 삭제 등) 전에 백업 파일로 저장해 두면 나중에 그대로 불러올 수 있습니다."));
+
+    var line=el("div","field");
+    var exportBtn=el("button","btn ghost","백업 파일로 저장"); exportBtn.type="button";
+    var importBtn=el("button","btn ghost","백업 파일 불러오기"); importBtn.type="button";
+    var fileInput=document.createElement("input");
+    fileInput.type="file"; fileInput.accept="application/json,.json";
+    fileInput.style.display="none";
+    line.appendChild(exportBtn); line.appendChild(importBtn); line.appendChild(fileInput);
+    pad.appendChild(line);
+
+    var msg=el("p","status","");
+    pad.appendChild(msg);
+
+    exportBtn.addEventListener("click", function(){
+      var json=JSON.stringify(currentBackupPayload(), null, 2);
+      var filename="근무기록-백업-"+todayStr()+".json";
+      function fallbackDownload(){
+        try{
+          var blob=new Blob([json], { type:"application/json" });
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement("a");
+          a.href=url; a.download=filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+          msg.textContent="백업 파일을 저장했습니다.";
+          msg.className="status success";
+        }catch(e){
+          msg.textContent="백업 파일을 저장하지 못했습니다.";
+          msg.className="status warn";
+        }
+      }
+      if(window.claude && typeof window.claude.use==="function"){
+        window.claude.use("downloads").then(function(dl){
+          if(!dl){ fallbackDownload(); return; }
+          return dl.save({ filename:filename, data:json }).then(function(){
+            msg.textContent="백업 파일을 저장했습니다.";
+            msg.className="status success";
+          }).catch(function(){
+            msg.textContent="백업 파일 저장이 취소되었거나 실패했습니다.";
+            msg.className="status warn";
+          });
+        }).catch(fallbackDownload);
+      }else{
+        fallbackDownload();
+      }
+    });
+
+    importBtn.addEventListener("click", function(){ fileInput.click(); });
+    fileInput.addEventListener("change", function(){
+      var file=fileInput.files && fileInput.files[0];
+      fileInput.value="";
+      if(!file) return;
+      var reader=new FileReader();
+      reader.onload=function(){
+        try{
+          var payload=JSON.parse(reader.result);
+          restoreFromBackup(payload).then(function(){
+            msg.textContent="백업 파일을 불러왔습니다.";
+            msg.className="status success";
+          });
+        }catch(e){
+          msg.textContent="이 파일을 읽을 수 없습니다. 이 프로그램에서 저장한 백업 파일인지 확인해 주세요.";
+          msg.className="status warn";
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
+  /* ===================== render ===================== */
+  function isEditing(){
+    var a=document.activeElement;
+    return a && (a.tagName==="INPUT") && a.id!=="wage" && a.closest("#app");
+  }
+  var pending=false;
+  function render(force){
+    if(!force && isEditing()){ pending=true; return; }
+    pending=false;
+    var app=document.getElementById("app");
+    app.textContent="";
+    var v=state.view;
+    if(v==="home") viewHome(app);
+    else if(v==="store") viewStore(app);
+    else if(v==="clock") viewClock(app);
+    else if(v==="overall") viewOverall(app);
+    else if(v==="people") viewPeople(app);
+    else if(v==="person") viewPerson(app);
+    else if(v==="add") viewAdd(app);
+    else if(v==="handover") viewHandover(app);
+    else if(v==="schedule") viewSchedule(app);
+    else if(v==="admin") viewAdmin(app);
+    var s=el("p","status"); s.id="statusLine";
+    app.appendChild(s);
+    document.title=(VIEWS[v]?VIEWS[v].title:"창릉 프리미어")+" — 창릉 프리미어";
+  }
+  document.addEventListener("focusout", function(){
+    setTimeout(function(){ if(pending && !isEditing()) render(); }, 0);
+  });
+
+  /* ===================== boot ===================== */
+  loadLocal();
+  render();
+
+  (window.__dbReady || Promise.reject(new Error("no loader"))).then(function(dbAdapter){
+    db=dbAdapter;
+    var localEmp=state.employees.slice();
+    var localData=state.data;
+    var localHandover=state.handover;
+    var localSchedule=state.schedule;
+    var localAdminPw=state.adminPassword;
+    db.doc("config/employees").get().then(function(snap){
+      var has=snap.exists && (snap.data().list||[]).length>0;
+      if(!has && localEmp.length){
+        state.employees=localEmp;
+        return saveEmployees().then(function(){
+          var jobs=[];
+          Object.keys(localData).forEach(function(ym){
+            Object.keys(localData[ym]||{}).forEach(function(id){
+              setRows(ym,id,localData[ym][id]);
+              jobs.push(saveMonth(ym,id));
+            });
+          });
+          Object.keys(localHandover).forEach(function(ym){
+            setHandoverRows(ym, localHandover[ym]);
+            jobs.push(saveHandover(ym));
+          });
+          Object.keys(localSchedule).forEach(function(weekStart){
+            state.schedule[weekStart]=localSchedule[weekStart];
+            jobs.push(saveSchedule(weekStart));
+          });
+          if(localAdminPw && localAdminPw!=="12345"){
+            state.adminPassword=localAdminPw;
+            jobs.push(saveAdminPassword());
+          }
+          return Promise.all(jobs);
+        });
+      }
+    }).catch(function(){}).then(function(){
+      subYm=null; subscribe(state.ym);
+    });
+  }).catch(function(){
+    setStatus("실시간 동기화(Supabase)를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요. (계속 이러면 회사/공용 네트워크가 연결을 막고 있을 수 있습니다)", true);
+  });
+})();
+</script>
+</body>
+</html>
