@@ -183,6 +183,75 @@
   .tile.featured:hover{border-left-color:var(--feature)}
   .tile.featured .t{font-size:20px}
   .tile .t{font-family:"Gowun Batang",serif;font-weight:700;font-size:19px;display:block}
+
+  .noticesection{
+    background:var(--surface);border:1px solid var(--ink);border-radius:8px;
+    margin:18px 0 14px;overflow:hidden;
+  }
+  .noticehead{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--rule)}
+  .noticeboardlink{
+    margin-left:auto;font:inherit;font-size:13px;font-weight:500;color:var(--accent-text);
+    background:none;border:none;cursor:pointer;
+  }
+  .noticeboardlink:hover{text-decoration:underline}
+  .noticetag{
+    display:inline-block;font-size:11px;font-weight:600;color:var(--feature-ink);
+    background:var(--feature);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle;
+  }
+  .commentlist{display:flex;flex-direction:column;gap:12px;margin-bottom:4px}
+  .commentrow{padding-bottom:12px;border-bottom:1px solid var(--rule)}
+  .commentrow:last-child{border-bottom:none;padding-bottom:0}
+  .commenttop{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+  .commentname{font-weight:500;font-size:13.5px}
+  .commentdate{font-size:12px;color:var(--muted)}
+  .commenttext{font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .noticeicon{flex:none;display:flex;color:var(--feature)}
+  .noticetext{font-size:14px;font-weight:500;color:var(--ink)}
+  .noticeempty{padding:14px;color:var(--muted);font-size:13.5px}
+  .noticelist{display:flex;flex-direction:column}
+  .noticerow{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+    background:none;border:none;border-bottom:1px solid var(--rule);
+    padding:10px 14px;font:inherit;color:var(--ink);
+  }
+  .noticerow:last-child{border-bottom:none}
+  .noticerow:hover{background:var(--accent-soft)}
+  .noticerowtitle{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .noticerowarrow{flex:none;color:var(--muted);font-size:16px}
+
+  .featuredgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .featuredcard{
+    display:flex;flex-direction:column;align-items:flex-start;text-align:left;cursor:pointer;
+    border-radius:14px;padding:20px 18px;font:inherit;border:1px solid transparent;
+  }
+  .featuredcard.f-green{background:var(--accent-soft);border-color:var(--accent)}
+  .featuredcard.f-orange{background:var(--feature-soft);border-color:var(--feature)}
+  .featuredicon{
+    width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:14px;color:#fff;
+  }
+  .f-green .featuredicon{background:var(--accent)}
+  .f-orange .featuredicon{background:var(--feature)}
+  .featuredtitle{font-family:"Gowun Batang",serif;font-weight:700;font-size:19px;color:var(--ink);display:block;margin-bottom:4px}
+  .featureddesc{font-size:13px;color:var(--muted);display:block}
+
+  .tilegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .gridtile{
+    display:flex;flex-direction:column;align-items:flex-start;text-align:left;cursor:pointer;
+    background:var(--surface);border:1px solid var(--rule-strong);border-radius:10px;
+    padding:14px 12px;font:inherit;
+  }
+  .gridtile:hover{border-color:var(--ink)}
+  .gridicon{color:var(--ink);margin-bottom:8px}
+  .gridtitle{font-size:14px;font-weight:500;color:var(--ink)}
+
+  .noticedate{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  .noticebody{font-size:14px;line-height:1.6;white-space:pre-wrap}
+
+  @media (max-width:560px){
+    .featuredgrid{grid-template-columns:1fr}
+    .tilegrid{grid-template-columns:repeat(2,1fr)}
+  }
   .tile .d{color:var(--muted);font-size:14px;display:block;margin-top:3px}
 
   /* ---- month picker ---- */
@@ -332,7 +401,7 @@
   .roster .item .nm{font-family:"Gowun Batang",serif;font-weight:700;font-size:17px}
   .roster .item .sm{color:var(--muted);font-size:14px}
   .roster .item .go{margin-left:auto;border:none;background:none;font:inherit;color:var(--accent-text);cursor:pointer;font-weight:500}
-  .rowlink{width:100%;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:10px}
+  .rowlink{flex:1;min-width:0;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:10px}
 
   .undowrap{
     margin-top:14px;background:var(--surface);border:1px solid var(--ink);border-left:3px solid var(--accent);
@@ -434,10 +503,13 @@
     schedWeek: sundayOfStr(todayStr()),      // 근무표에서 보고 있는 주의 일요일 날짜
     schedSelDate: null,   // 근무표에서 고른 날짜
     schedSummaryEmp: null,// 근무표 하단 요약에서 고른 근무자
+    posts: [],              // [{id,title,content,createdAt,isNotice,noticeUntil,comments:[{id,name,content,createdAt}]}]
+    boardSelId: null,       // 게시판에서 고른 글
+    boardWriting: false,    // 게시판에서 새 글 작성 중인지
     coffeeFrontFirst: true, // 일요일에 "커피 앞"부터 시작할지, "커피 뒤"부터 시작할지
     adminPassword: "12345",
     adminUnlocked: false,  // 정산·관리자 메뉴에 새로 들어갈 때마다 다시 확인한다
-    adminSection: null     // 관리자 안에서 고른 하위 항목: password | settle | backup
+    adminSection: null    // 관리자 안에서 고른 하위 항목: password | settle | backup
   };
 
   var VIEWS = {
@@ -449,6 +521,7 @@
     person:   { title:"개인 근무 확인" },
     add:      { title:"근무자 추가" },
     handover: { title:"일일 인수인계" },
+    board:    { title:"게시판" },
     admin:    { title:"관리자" },
     schedule: { title:"근무표" }
   };
@@ -587,6 +660,7 @@
     state.schedule=all.schedule||{};
     state.coffeeFrontFirst=(all.coffeeFrontFirst!==undefined)? all.coffeeFrontFirst : true;
     state.adminPassword=all.adminPassword||"12345";
+    state.posts=all.posts||[];
     applyRemovedOverride();
   }
   function saveEmployees(){
@@ -608,6 +682,13 @@
       return db.doc("config/coffee").set({ frontFirst: state.coffeeFrontFirst });
     });
     var all=readLocal(); all.coffeeFrontFirst=state.coffeeFrontFirst; writeLocal(all);
+    return Promise.resolve();
+  }
+  function savePosts(){
+    if(db) return queued("posts", function(){
+      return db.doc("config/posts").set({ list: state.posts });
+    });
+    var all=readLocal(); all.posts=state.posts; writeLocal(all);
     return Promise.resolve();
   }
   function saveMonth(ym, empId){
@@ -686,6 +767,12 @@
       var v=s.exists && typeof s.data().frontFirst==="boolean" ? s.data().frontFirst : true;
       if(v===state.coffeeFrontFirst) return;
       state.coffeeFrontFirst=v;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/posts").onSnapshot(function(s){
+      var list=cloneList((s.exists && s.data().list)||[]);
+      if(JSON.stringify(list)===JSON.stringify(state.posts)) return;
+      state.posts=list;
       render();
     }, dbErr));
     subs.push(db.collection("shifts").where("ym","==",ym).onSnapshot(function(q){
@@ -807,6 +894,10 @@
     if(view==="clock") state.clockEmp=null;
     if(view==="schedule"){ state.schedSelDate=null; state.schedSummaryEmp=null; }
     if(view==="admin"){ state.adminUnlocked=false; state.adminSection=null; }
+    if(view==="board"){
+      state.boardSelId=(opts.postId!==undefined)? opts.postId : null;
+      state.boardWriting=false;
+    }
     subscribe(state.ym);
     if(view==="schedule") subscribeWeek(state.schedWeek);
     window.scrollTo(0,0);
@@ -831,6 +922,7 @@
       var b=el("button","back","‹ 뒤로");
       b.addEventListener("click", function(){
         if(backTo==="__admin_menu__"){ state.adminSection=null; render(true); }
+        else if(backTo==="__board_list__"){ state.boardSelId=null; state.boardWriting=false; render(true); }
         else go(backTo);
       });
       bar.appendChild(b);
@@ -1029,28 +1121,254 @@
   }
 
   /* ===================== views ===================== */
+  var ICON_PATHS={
+    cash:'<rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M6 6v0M18 18v0"></path>',
+    clock:'<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
+    store:'<path d="M4 10l1-6h14l1 6"></path><path d="M4 10a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"></path><path d="M5 10v10h14V10"></path>',
+    chart:'<path d="M4 20V10M11 20V4M18 20v-7"></path><path d="M2 20h20"></path>',
+    user:'<circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path>',
+    userplus:'<circle cx="10" cy="8" r="4"></circle><path d="M2 21c0-4.4 3.2-7 8-7s8 2.6 8 7"></path><path d="M19 8v6M16 11h6"></path>',
+    gear:'<circle cx="12" cy="12" r="3"></circle><path d="M12 3v2M12 19v2M4.2 7l1.7 1M18 16l1.8 1M4.2 17l1.7-1M18 8l1.8-1M3 12h2M19 12h2"></path>',
+    megaphone:'<path d="M3 11v2a1 1 0 0 0 1 1h2l9 4V6l-9 4H4a1 1 0 0 0-1 1z"></path><path d="M10 18v2a2 2 0 0 0 4 0v-1"></path>'
+  };
+  function iconSvg(name, size){
+    return '<svg width="'+(size||22)+'" height="'+(size||22)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||"")+'</svg>';
+  }
   function viewHome(app){
     app.appendChild(topBar("창릉 프리미어", null, ymLabel(ymOf(new Date()))));
-    app.appendChild(el("p","lede","하고 싶은 일을 골라 주세요."));
-    var menu=el("div","menu");
+
+    var noticeSection=el("div","noticesection");
+    var noticeHead=el("div","noticehead");
+    var nb1=el("span","noticeicon"); nb1.innerHTML=iconSvg("megaphone",18); noticeHead.appendChild(nb1);
+    noticeHead.appendChild(el("span","noticetext","공지사항"));
+    var boardLink=el("button","noticeboardlink","게시판");
+    boardLink.type="button";
+    boardLink.addEventListener("click", function(){ go("board"); });
+    noticeHead.appendChild(boardLink);
+    noticeSection.appendChild(noticeHead);
+    var today=todayStr();
+    var activeNotices=state.posts.filter(function(p){ return p.isNotice && p.noticeUntil && p.noticeUntil>=today; });
+    if(!activeNotices.length){
+      noticeSection.appendChild(el("div","noticeempty","등록된 공지사항이 없습니다."));
+    }else{
+      var noticeList=el("div","noticelist");
+      activeNotices.forEach(function(n){
+        var row=el("button","noticerow");
+        row.appendChild(el("span","noticerowtitle", n.title));
+        row.appendChild(el("span","noticerowarrow","›"));
+        row.addEventListener("click", function(){ go("board",{ postId:n.id }); });
+        noticeList.appendChild(row);
+      });
+      noticeSection.appendChild(noticeList);
+    }
+    app.appendChild(noticeSection);
+
+    var featuredWrap=el("div","featuredgrid");
     [
-      ["handover","일일 인수인계","날짜별 현금·카드 매출과 포스기 현금을 기록합니다", true],
-      ["clock","출퇴근 기록","근무자를 누르고 출근·퇴근 시간을 적습니다", true],
-      ["schedule","근무표","한 주씩 날짜별로 근무자와 오픈·마감을 배정합니다"],
-      ["store","매장 근무 기록","달력에서 날짜를 고르면 그날 근무자와 시간이 보입니다"],
-      ["overall","전체 근무 확인","한 달 동안 누가 얼마나 일했는지 한눈에 봅니다"],
-      ["people","개인 근무 확인","근무자별 달력, 일별 기록, 월급을 확인합니다"],
-      ["add","근무자 추가","근무자를 등록하거나 지웁니다"],
-      ["admin","관리자","비밀번호 변경, 정산, 데이터 백업을 관리합니다"]
+      ["handover","일일 인수인계","매출과 시재를 기록합니다","cash","f-green"],
+      ["clock","출퇴근 기록","출근·퇴근 시간을 적습니다","clock","f-orange"]
     ].forEach(function(t){
-      var featured=t[3];
-      var b=el("button","tile"+(featured?" featured":""));
-      b.appendChild(el("span","t",t[1]));
-      b.appendChild(el("span","d",t[2]));
-      b.addEventListener("click", function(){ go(t[0]); });
-      menu.appendChild(b);
+      var card=el("button","featuredcard "+t[4]);
+      var ic=el("div","featuredicon"); ic.innerHTML=iconSvg(t[3],24);
+      card.appendChild(ic);
+      card.appendChild(el("span","featuredtitle",t[1]));
+      card.appendChild(el("span","featureddesc",t[2]));
+      card.addEventListener("click", function(){ go(t[0]); });
+      featuredWrap.appendChild(card);
     });
-    app.appendChild(menu);
+    app.appendChild(featuredWrap);
+
+    var grid=el("div","tilegrid");
+    [
+      ["schedule","근무표","calendar"],
+      ["store","매장 근무 기록","store"],
+      ["overall","전체 근무 확인","chart"],
+      ["people","개인 근무 확인","user"],
+      ["add","근무자 추가","userplus"],
+      ["admin","관리자","gear"]
+    ].forEach(function(t){
+      var card=el("button","gridtile");
+      var ic=el("div","gridicon"); ic.innerHTML=iconSvg(t[2],20);
+      card.appendChild(ic);
+      card.appendChild(el("span","gridtitle",t[1]));
+      card.addEventListener("click", function(){ go(t[0]); });
+      grid.appendChild(card);
+    });
+    app.appendChild(grid);
+  }
+
+  /* ---- 공지사항 ---- */
+  function findPost(id){
+    var found=null;
+    state.posts.forEach(function(p){ if(p.id===id) found=p; });
+    return found;
+  }
+  function viewBoard(app){
+    if(state.boardSelId && !findPost(state.boardSelId)) state.boardSelId=null;
+    if(state.boardSelId){ renderPostDetail(app, state.boardSelId); return; }
+    if(state.boardWriting){ renderBoardCompose(app); return; }
+    renderBoardList(app);
+  }
+  function renderBoardList(app){
+    app.appendChild(topBar("게시판","home"));
+    var writeBtn=el("button","btn","글쓰기"); writeBtn.type="button";
+    writeBtn.style.marginBottom="14px";
+    writeBtn.addEventListener("click", function(){ state.boardWriting=true; render(true); });
+    app.appendChild(writeBtn);
+
+    if(!state.posts.length){
+      var card=el("div","card");
+      card.appendChild(el("div","empty","등록된 게시글이 없습니다."));
+      app.appendChild(card);
+      return;
+    }
+    var listCard=el("div","card"), list=el("div","roster");
+    state.posts.forEach(function(p){
+      var item=el("div","item");
+      var link=el("button","rowlink");
+      var nm=el("span","nm", p.title);
+      if(p.isNotice){ nm.appendChild(el("span","noticetag","공지")); }
+      link.appendChild(nm);
+      link.appendChild(el("span","sm", (p.createdAt? dayLabel(p.createdAt.slice(0,10)) : "")+(p.isNotice? "" : " · 댓글 "+(p.comments? p.comments.length:0))));
+      link.appendChild(el("span","go","›"));
+      link.addEventListener("click", function(){ state.boardSelId=p.id; render(true); });
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+    listCard.appendChild(list);
+    app.appendChild(listCard);
+  }
+  function renderBoardCompose(app){
+    app.appendChild(topBar("글쓰기","__board_list__"));
+    var card=el("div","card");
+    var pad=el("div","pad");
+
+    var f1=el("div","field");
+    f1.appendChild(el("label",null,"제목"));
+    var titleI=document.createElement("input");
+    titleI.type="text"; titleI.className="ti"; titleI.style.flex="1";
+    titleI.placeholder="제목을 입력하세요"; titleI.maxLength=60;
+    f1.appendChild(titleI);
+    pad.appendChild(f1);
+
+    var f2=el("div","field");
+    f2.style.marginTop="10px"; f2.style.alignItems="flex-start";
+    f2.appendChild(el("label",null,"내용"));
+    var contentI=document.createElement("textarea");
+    contentI.className="ti"; contentI.style.flex="1"; contentI.style.minHeight="120px";
+    contentI.style.resize="vertical"; contentI.placeholder="내용을 입력하세요";
+    f2.appendChild(contentI);
+    pad.appendChild(f2);
+
+    var msg=el("p","status","");
+    var addBtn=el("button","btn","게시하기"); addBtn.type="button";
+    addBtn.style.marginTop="10px";
+    addBtn.addEventListener("click", function(){
+      var title=titleI.value.trim(), content=contentI.value.trim();
+      if(!title){ msg.textContent="제목을 입력해 주세요."; msg.className="status warn"; return; }
+      if(!content){ msg.textContent="내용을 입력해 주세요."; msg.className="status warn"; return; }
+      var post={ id:uid(), title:title, content:content, createdAt:new Date().toISOString(),
+        isNotice:false, noticeUntil:null, comments:[] };
+      state.posts=[post].concat(state.posts);
+      savePosts();
+      state.boardWriting=false;
+      state.boardSelId=post.id;
+      render(true);
+    });
+    pad.appendChild(addBtn);
+    pad.appendChild(msg);
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+  function renderPostDetail(app, id){
+    var p=findPost(id);
+    if(!p){ state.boardSelId=null; render(true); return; }
+    app.appendChild(topBar(p.title, "__board_list__"));
+
+    var card=el("div","card");
+    var pad=el("div","pad");
+    var metaLine=el("div","noticedate", (p.createdAt? dayLabel(p.createdAt.slice(0,10)) : "")+(p.isNotice? " · 공지사항":""));
+    pad.appendChild(metaLine);
+    pad.appendChild(el("div","noticebody", p.content));
+
+    if(!p.isNotice){
+      var promoteMsg=el("p","status","");
+      var promoteBtn=el("button","btn ghost","공지사항으로 등록"); promoteBtn.type="button";
+      promoteBtn.style.marginTop="12px";
+      promoteBtn.addEventListener("click", function(){
+        state.posts=state.posts.map(function(x){
+          return x.id===id? Object.assign({}, x, { isNotice:true, noticeUntil: addDaysStr(todayStr(),7) }) : x;
+        });
+        savePosts();
+        promoteMsg.textContent="공지사항으로 등록되었습니다. 일주일 동안 홈 화면에 표시됩니다.";
+        promoteMsg.className="status success";
+        promoteBtn.disabled=true;
+      });
+      pad.appendChild(promoteBtn);
+      pad.appendChild(promoteMsg);
+    }
+    card.appendChild(pad);
+    app.appendChild(card);
+
+    if(!p.isNotice){
+      var cCard=el("div","card");
+      var cHead=el("div","card-head");
+      cHead.appendChild(el("div","h","댓글"));
+      cHead.appendChild(el("div","m", (p.comments||[]).length+"개"));
+      cCard.appendChild(cHead);
+      var cPad=el("div","pad");
+
+      if(!(p.comments||[]).length){
+        cPad.appendChild(el("div","empty","아직 댓글이 없습니다."));
+      }else{
+        var cList=el("div","commentlist");
+        p.comments.forEach(function(c){
+          var row=el("div","commentrow");
+          var top=el("div","commenttop");
+          top.appendChild(el("span","commentname", c.name));
+          top.appendChild(el("span","commentdate", c.createdAt? dayLabel(c.createdAt.slice(0,10)) : ""));
+          row.appendChild(top);
+          row.appendChild(el("div","commenttext", c.content));
+          cList.appendChild(row);
+        });
+        cPad.appendChild(cList);
+      }
+
+      var cf=el("div","field");
+      cf.style.marginTop="12px";
+      var nameI=document.createElement("input");
+      nameI.type="text"; nameI.className="ti"; nameI.placeholder="이름"; nameI.style.width="110px"; nameI.maxLength=20;
+      cf.appendChild(nameI);
+      cPad.appendChild(cf);
+
+      var cf2=el("div","field");
+      cf2.style.marginTop="8px"; cf2.style.alignItems="flex-start";
+      var bodyI=document.createElement("textarea");
+      bodyI.className="ti"; bodyI.style.flex="1"; bodyI.style.minHeight="70px";
+      bodyI.style.resize="vertical"; bodyI.placeholder="댓글을 입력하세요";
+      cf2.appendChild(bodyI);
+      cPad.appendChild(cf2);
+
+      var cMsg=el("p","status","");
+      var cBtn=el("button","btn","댓글 등록"); cBtn.type="button";
+      cBtn.style.marginTop="8px";
+      cBtn.addEventListener("click", function(){
+        var name=nameI.value.trim(), body=bodyI.value.trim();
+        if(!name){ cMsg.textContent="이름을 입력해 주세요."; cMsg.className="status warn"; return; }
+        if(!body){ cMsg.textContent="내용을 입력해 주세요."; cMsg.className="status warn"; return; }
+        var comment={ id:uid(), name:name, content:body, createdAt:new Date().toISOString() };
+        state.posts=state.posts.map(function(x){
+          return x.id===id? Object.assign({}, x, { comments:(x.comments||[]).concat([comment]) }) : x;
+        });
+        savePosts();
+        render(true);
+      });
+      cPad.appendChild(cBtn);
+      cPad.appendChild(cMsg);
+      cCard.appendChild(cPad);
+      app.appendChild(cCard);
+    }
   }
 
   /* ---- 매장 근무 기록 ---- */
@@ -2248,6 +2566,7 @@
       handover: state.handover,
       schedule: state.schedule,
       coffeeFrontFirst: state.coffeeFrontFirst,
+      posts: state.posts,
       adminPassword: state.adminPassword,
       removedIds: Array.from(removedIds)
     };
@@ -2259,6 +2578,7 @@
     state.data = (payload.data && typeof payload.data==="object") ? payload.data : {};
     state.handover = (payload.handover && typeof payload.handover==="object") ? payload.handover : {};
     state.schedule = (payload.schedule && typeof payload.schedule==="object") ? payload.schedule : {};
+    state.posts = Array.isArray(payload.posts) ? payload.posts : [];
     if(typeof payload.coffeeFrontFirst==="boolean") state.coffeeFrontFirst=payload.coffeeFrontFirst;
     if(typeof payload.adminPassword==="string" && payload.adminPassword) state.adminPassword=payload.adminPassword;
     removedIds = new Set(Array.isArray(payload.removedIds)? payload.removedIds : []);
@@ -2268,6 +2588,7 @@
     saveEmployees();
     saveAdminPassword();
     saveCoffeeSetting();
+    savePosts();
     var jobs=[];
     Object.keys(state.data).forEach(function(ym){
       Object.keys(state.data[ym]||{}).forEach(function(id){ jobs.push(saveMonth(ym,id)); });
@@ -2376,6 +2697,7 @@
     else if(v==="person") viewPerson(app);
     else if(v==="add") viewAdd(app);
     else if(v==="handover") viewHandover(app);
+    else if(v==="board") viewBoard(app);
     else if(v==="schedule") viewSchedule(app);
     else if(v==="admin") viewAdmin(app);
     var s=el("p","status"); s.id="statusLine";
@@ -2397,6 +2719,7 @@
     var localHandover=state.handover;
     var localSchedule=state.schedule;
     var localAdminPw=state.adminPassword;
+    var localPosts=state.posts.slice();
     db.doc("config/employees").get().then(function(snap){
       var has=snap.exists && (snap.data().list||[]).length>0;
       if(!has && localEmp.length){
@@ -2420,6 +2743,10 @@
           if(localAdminPw && localAdminPw!=="12345"){
             state.adminPassword=localAdminPw;
             jobs.push(saveAdminPassword());
+          }
+          if(localPosts.length){
+            state.posts=localPosts;
+            jobs.push(savePosts());
           }
           return Promise.all(jobs);
         });
