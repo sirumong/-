@@ -231,7 +231,7 @@
   .commentdate{font-size:13.5px;color:var(--muted)}
   .commenttext{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
   .noticeicon{flex:none;display:flex;color:var(--feature)}
-  .noticetext{font-size:15.5px;font-weight:500;color:var(--ink)}
+  .noticetext{font-size:23px;font-weight:500;color:var(--ink)}
   .noticeempty{padding:14px;color:var(--muted);font-size:15px}
   .noticelist{display:flex;flex-direction:column}
   .noticerow{
@@ -241,7 +241,7 @@
   }
   .noticerow:last-child{border-bottom:none}
   .noticerow:hover{background:var(--accent-soft)}
-  .noticerowtitle{flex:1;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .noticerowtitle{flex:1;font-size:18.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .noticerowarrow{flex:none;color:var(--muted);font-size:17.5px}
 
   .featuredgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
@@ -1176,7 +1176,7 @@
 
     var noticeSection=el("div","noticesection");
     var noticeHead=el("div","noticehead");
-    var nb1=el("span","noticeicon"); nb1.innerHTML=iconSvg("megaphone",18); noticeHead.appendChild(nb1);
+    var nb1=el("span","noticeicon"); nb1.innerHTML=iconSvg("megaphone",36); noticeHead.appendChild(nb1);
     noticeHead.appendChild(el("span","noticetext","공지사항"));
     var boardLink=el("button","noticeboardlink","게시판");
     boardLink.type="button";
