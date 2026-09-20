@@ -150,7 +150,7 @@
   body{
     background:var(--bg); color:var(--ink);
     font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-    font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%;
+    font-size:17.5px; line-height:1.55; -webkit-text-size-adjust:100%;
     font-variant-numeric:tabular-nums;
   }
   .wrap{max-width:960px;margin:0 auto;padding:26px 16px 90px}
@@ -158,22 +158,22 @@
 
   /* ---- top bar ---- */
   .bar{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
-  .bar h1{font-size:24px;line-height:1.2}
+  .bar h1{font-size:25.5px;line-height:1.2}
   .back{
     flex:none;border:1px solid var(--rule-strong);background:var(--surface);color:var(--ink);
     border-radius:3px;padding:6px 12px;font:inherit;cursor:pointer;
   }
   .back:hover{border-color:var(--ink)}
-  .bar .sub{margin-left:auto;color:var(--muted);font-size:14px;white-space:nowrap}
+  .bar .sub{margin-left:auto;color:var(--muted);font-size:15.5px;white-space:nowrap}
   input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
   /* ---- home ---- */
-  .lede{color:var(--muted);font-size:15px;margin:16px 0 22px;max-width:56ch}
+  .lede{color:var(--muted);font-size:16.5px;margin:16px 0 22px;max-width:56ch}
   .menu{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
   .tile{
     display:block;text-align:left;width:100%;cursor:pointer;
     background:var(--surface);border:1px solid var(--ink);border-left:3px solid var(--accent);
-    border-radius:3px;padding:16px 16px 14px;font:inherit;color:inherit;
+    border-radius:5px;padding:20px 20px 17px;font:inherit;color:inherit;
   }
   .tile:hover{border-color:var(--rule-strong);border-left-color:var(--accent)}
   .tile.featured{
@@ -181,8 +181,8 @@
     background:var(--feature-soft);
   }
   .tile.featured:hover{border-left-color:var(--feature)}
-  .tile.featured .t{font-size:20px}
-  .tile .t{font-family:"Gowun Batang",serif;font-weight:700;font-size:19px;display:block}
+  .tile.featured .t{font-size:21.5px}
+  .tile .t{font-family:"Gowun Batang",serif;font-weight:700;font-size:20.5px;display:block}
 
   .noticesection{
     background:var(--surface);border:1px solid var(--ink);border-radius:8px;
@@ -190,24 +190,49 @@
   }
   .noticehead{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--rule)}
   .noticeboardlink{
-    margin-left:auto;font:inherit;font-size:13px;font-weight:500;color:var(--accent-text);
+    margin-left:auto;font:inherit;font-size:14.5px;font-weight:500;color:var(--accent-text);
     background:none;border:none;cursor:pointer;
   }
   .noticeboardlink:hover{text-decoration:underline}
-  .noticetag{
-    display:inline-block;font-size:11px;font-weight:600;color:var(--feature-ink);
-    background:var(--feature);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle;
+  .posttag{
+    box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+    flex:none;font-size:14px;font-weight:700;line-height:1.3;
+    border-radius:999px;padding:3px 11px;border:1px solid transparent;white-space:nowrap;
   }
+  .posttag.notice{color:var(--feature-ink);background:var(--feature);border-color:var(--feature)}
+  .posttag.free{color:var(--muted);background:var(--surface);border-color:var(--rule-strong)}
+  .boardtabs{display:flex;gap:6px;margin:16px 0 12px}
+  .boardtab{
+    font:inherit;font-size:15px;cursor:pointer;background:var(--surface);color:var(--muted);
+    border:1px solid var(--rule-strong);border-radius:999px;padding:6px 15px;
+  }
+  .boardtab:hover{border-color:var(--ink)}
+  .boardtab.tab-all.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+  .boardtab.tab-notice.on{background:var(--feature);color:var(--feature-ink);border-color:var(--feature)}
+  .boardtab.tab-free.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .boardpager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px}
+  .pagerlabel{font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .writewrap{display:flex;justify-content:flex-end;margin-top:12px}
+  .postactions{margin-left:auto;display:flex;gap:6px;flex-wrap:nowrap}
+  .actionbtn{
+    font:inherit;font-size:14px;cursor:pointer;background:var(--surface);color:var(--ink);
+    border:1px solid var(--rule-strong);border-radius:999px;padding:4px 11px;white-space:nowrap;
+  }
+  .actionbtn:hover{border-color:var(--ink)}
+  .actionbtn.danger{color:var(--danger);border-color:var(--danger)}
+  .actionbtn.on{background:var(--feature);color:var(--feature-ink);border-color:var(--feature)}
+  .noticelive{font-size:13.5px;color:var(--muted);align-self:center}
   .commentlist{display:flex;flex-direction:column;gap:12px;margin-bottom:4px}
+  .commentactions{margin-left:auto;display:flex;gap:6px}
   .commentrow{padding-bottom:12px;border-bottom:1px solid var(--rule)}
   .commentrow:last-child{border-bottom:none;padding-bottom:0}
   .commenttop{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
-  .commentname{font-weight:500;font-size:13.5px}
-  .commentdate{font-size:12px;color:var(--muted)}
-  .commenttext{font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .commentname{font-weight:500;font-size:15px}
+  .commentdate{font-size:13.5px;color:var(--muted)}
+  .commenttext{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
   .noticeicon{flex:none;display:flex;color:var(--feature)}
-  .noticetext{font-size:14px;font-weight:500;color:var(--ink)}
-  .noticeempty{padding:14px;color:var(--muted);font-size:13.5px}
+  .noticetext{font-size:15.5px;font-weight:500;color:var(--ink)}
+  .noticeempty{padding:14px;color:var(--muted);font-size:15px}
   .noticelist{display:flex;flex-direction:column}
   .noticerow{
     display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
@@ -216,8 +241,8 @@
   }
   .noticerow:last-child{border-bottom:none}
   .noticerow:hover{background:var(--accent-soft)}
-  .noticerowtitle{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .noticerowarrow{flex:none;color:var(--muted);font-size:16px}
+  .noticerowtitle{flex:1;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .noticerowarrow{flex:none;color:var(--muted);font-size:17.5px}
 
   .featuredgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
   .featuredcard{
@@ -232,8 +257,8 @@
   }
   .f-green .featuredicon{background:var(--accent)}
   .f-orange .featuredicon{background:var(--feature)}
-  .featuredtitle{font-family:"Gowun Batang",serif;font-weight:700;font-size:19px;color:var(--ink);display:block;margin-bottom:4px}
-  .featureddesc{font-size:13px;color:var(--muted);display:block}
+  .featuredtitle{font-family:"Gowun Batang",serif;font-weight:700;font-size:20.5px;color:var(--ink);display:block;margin-bottom:4px}
+  .featureddesc{font-size:14.5px;color:var(--muted);display:block}
 
   .tilegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .gridtile{
@@ -243,16 +268,16 @@
   }
   .gridtile:hover{border-color:var(--ink)}
   .gridicon{color:var(--ink);margin-bottom:8px}
-  .gridtitle{font-size:14px;font-weight:500;color:var(--ink)}
+  .gridtitle{font-size:15.5px;font-weight:500;color:var(--ink)}
 
-  .noticedate{font-size:12.5px;color:var(--muted);margin-bottom:10px}
-  .noticebody{font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .noticedate{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .noticebody{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
 
   @media (max-width:560px){
     .featuredgrid{grid-template-columns:1fr}
     .tilegrid{grid-template-columns:repeat(2,1fr)}
   }
-  .tile .d{color:var(--muted);font-size:14px;display:block;margin-top:3px}
+  .tile .d{color:var(--muted);font-size:15.5px;display:block;margin-top:3px}
 
   /* ---- month picker ---- */
   .pick{display:flex;align-items:center;gap:6px;margin:18px 0 6px;flex-wrap:wrap}
@@ -262,16 +287,16 @@
   }
   .arrow{
     width:32px;height:32px;flex:none;border:1px solid var(--rule-strong);background:var(--surface);
-    color:var(--ink);border-radius:3px;font-size:16px;line-height:1;cursor:pointer;
+    color:var(--ink);border-radius:3px;font-size:17.5px;line-height:1;cursor:pointer;
   }
   .arrow:hover{border-color:var(--ink)}
-  .pick .label{font-family:"Gowun Batang",serif;font-weight:700;font-size:20px;margin-right:4px}
+  .pick .label{font-family:"Gowun Batang",serif;font-weight:700;font-size:21.5px;margin-right:4px}
 
   /* ---- calendar ---- */
   .cal{background:var(--surface);border:1px solid var(--ink);border-radius:4px;overflow:hidden}
   .cal .dow,.cal .grid{display:grid;grid-template-columns:repeat(7,1fr)}
   .cal .dow div{
-    padding:8px 0;text-align:center;font-size:13.5px;color:var(--muted);
+    padding:8px 0;text-align:center;font-size:15px;color:var(--muted);
     border-bottom:1px solid var(--rule-strong);
   }
   .cal .dow div:first-child{color:var(--sun)} .cal .dow div:last-child{color:var(--sat)}
@@ -282,15 +307,15 @@
   }
   .cell:nth-child(7n){border-right:none}
   .cell.blank{cursor:default;background:transparent}
-  .cell .num{font-size:14px;color:var(--muted)}
+  .cell .num{font-size:15.5px;color:var(--muted)}
   .cell.sun .num{color:var(--sun)} .cell.sat .num{color:var(--sat)}
   .cell.today .num{font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
   .cell.worked{background:var(--accent-soft)}
   .cell.sel{outline:2px solid var(--accent);outline-offset:-2px}
-  .cell .who{font-size:12.5px;color:var(--accent-text);line-height:1.35;overflow:hidden}
-  .cell .hrs{margin-top:auto;font-size:12.5px;color:var(--accent-text);font-weight:500}
+  .cell .who{font-size:14px;color:var(--accent-text);line-height:1.35;overflow:hidden}
+  .cell .hrs{margin-top:auto;font-size:14px;color:var(--accent-text);font-weight:500}
   .cal.compact .cell{min-height:32px;align-items:center;justify-content:center;padding:2px}
-  .cal.compact .cell .num{font-size:13px}
+  .cal.compact .cell .num{font-size:14.5px}
 
   .weekgrid{
     display:grid;grid-template-columns:repeat(7,1fr);
@@ -298,12 +323,12 @@
   }
   .wcell{position:relative;border-right:1px solid var(--rule);min-height:96px}
   .wcell .num{display:block;margin-bottom:1em}
-  .coffeebadge{position:absolute;top:5px;right:6px;font-size:12.5px;color:#6F4E37;line-height:1;white-space:nowrap;font-weight:700}
+  .coffeebadge{position:absolute;top:5px;right:6px;font-size:14px;color:#6F4E37;line-height:1;white-space:nowrap;font-weight:700}
   .coffeetoggle{display:flex;align-items:center;gap:8px;margin:10px 0 4px}
   .wcell:nth-child(7n){border-right:none}
-  .wdow{font-size:15px;color:var(--ink);font-weight:500}
+  .wdow{font-size:16.5px;color:var(--ink);font-weight:500}
   .wcell.sun .wdow{color:var(--sun)} .wcell.sat .wdow{color:var(--sat)}
-  .wname{font-size:12.5px;color:var(--ink);line-height:1.4;word-break:keep-all;overflow-wrap:break-word}
+  .wname{font-size:14px;color:var(--ink);line-height:1.4;word-break:keep-all;overflow-wrap:break-word}
   .wname.off{color:var(--danger);font-weight:600}
 
   .assignlist{display:flex;flex-direction:column;margin-bottom:4px}
@@ -314,40 +339,40 @@
   .aname{font-weight:500;flex:1}
   .rolebtns{display:flex;gap:6px}
   .rolebtn{
-    font:inherit;font-size:13.5px;cursor:pointer;background:var(--surface);color:var(--muted);
+    font:inherit;font-size:15px;cursor:pointer;background:var(--surface);color:var(--muted);
     border:1px solid var(--rule-strong);border-radius:999px;padding:4px 11px;
   }
   .rolebtn:hover{border-color:var(--accent);color:var(--accent)}
   .rolebtn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 
   .summarydetail{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
-  .summaryline{padding:4px 0;font-size:15px}
+  .summaryline{padding:4px 0;font-size:16.5px}
 
   .personweek{background:var(--surface);border:1px solid var(--ink);border-radius:4px;padding:14px;max-width:100%}
-  .personweekdate{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .personweekdate{font-size:15.5px;color:var(--muted);margin-bottom:10px}
   .personweekbody{display:flex;align-items:stretch;gap:14px}
   .personweekname{
     flex:0 0 auto;min-width:56px;display:flex;align-items:center;justify-content:center;
-    font-family:"Gowun Batang",serif;font-weight:700;font-size:20px;text-align:center;
+    font-family:"Gowun Batang",serif;font-weight:700;font-size:21.5px;text-align:center;
     padding:0 6px;word-break:keep-all;
   }
   .personweekrow{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--ink);border-radius:4px;overflow:hidden}
   .personweekrow .wcell{min-height:70px;border-bottom:none}
-  .personweekrow .wname{font-size:15px;line-height:1.3}
+  .personweekrow .wname{font-size:16.5px;line-height:1.3}
 
   /* ---- generic card / list ---- */
   .card{background:var(--surface);border:1px solid var(--ink);border-radius:4px;margin-top:16px}
-  .card-head{padding:12px 15px;border-bottom:1px solid var(--rule);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-  .card-head .h{font-family:"Gowun Batang",serif;font-weight:700;font-size:18px}
-  .card-head .m{color:var(--muted);font-size:14px}
+  .card-head{padding:15px 18px;border-bottom:1px solid var(--rule);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .card-head .h{font-family:"Gowun Batang",serif;font-weight:700;font-size:19.5px}
+  .card-head .m{color:var(--muted);font-size:15.5px}
   .card-head .sum{margin-left:auto;color:var(--accent-text);font-weight:500;white-space:nowrap}
-  .pad{padding:14px 15px}
-  .empty{padding:16px 15px;color:var(--muted);font-size:15px}
+  .pad{padding:18px}
+  .empty{padding:16px 15px;color:var(--muted);font-size:16.5px}
 
   .addrow{padding:13px 15px;border-bottom:1px solid var(--rule);background:var(--accent-soft)}
-  .addlabel{font-family:"Gowun Batang",serif;font-weight:700;font-size:15px;margin-bottom:9px}
+  .addlabel{font-family:"Gowun Batang",serif;font-weight:700;font-size:16.5px;margin-bottom:9px}
   .addline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px}
-  .addsep{font-size:13.5px;color:var(--muted)}
+  .addsep{font-size:15px;color:var(--muted)}
   .adddur{font-weight:500;color:var(--accent-text);min-width:64px}
   .datebtn{font:inherit;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--rule-strong);border-radius:3px;padding:7px 11px}
   .datebtn:hover{border-color:var(--accent);color:var(--accent)}
@@ -357,7 +382,7 @@
   .diffchart svg{display:block;min-width:260px}
   .saleschart svg{display:block;width:100%}
   .chartlabels{display:flex;margin-top:2px}
-  .chartlabels span{flex:1 1 0;text-align:center;font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .chartlabels span{flex:1 1 0;text-align:center;font-size:14px;color:var(--muted);white-space:nowrap}
   tfoot td{border-top:2px solid var(--ink);border-bottom:none;font-weight:500}
   tfoot .sumlabel{color:var(--muted);font-weight:500}
   tfoot .sumval{color:var(--accent-text)}
@@ -365,7 +390,7 @@
   table{border-collapse:collapse;width:100%;min-width:480px}
   .table-wrap{overflow-x:auto}
   th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule)}
-  th{font-weight:500;font-size:13.5px;color:var(--muted);border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+  th{font-weight:500;font-size:15px;color:var(--muted);border-bottom:1px solid var(--rule-strong);white-space:nowrap}
   tbody tr:last-child td{border-bottom:none}
   td.num,th.num{text-align:right;white-space:nowrap}
   td.dur{color:var(--accent-text);font-weight:500}
@@ -383,7 +408,7 @@
   input.tf:hover{border-color:var(--rule-strong)}
   input.tf::placeholder{color:var(--muted);opacity:.6}
 
-  .rowdel{border:none;background:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:4px 6px;border-radius:3px}
+  .rowdel{border:none;background:none;color:var(--muted);cursor:pointer;font-size:18.5px;line-height:1;padding:4px 6px;border-radius:3px}
   .rowdel:hover{color:var(--danger)}
 
   /* ---- name chips ---- */
@@ -398,8 +423,8 @@
   .roster{display:flex;flex-direction:column}
   .roster .item{display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid var(--rule)}
   .roster .item:last-child{border-bottom:none}
-  .roster .item .nm{font-family:"Gowun Batang",serif;font-weight:700;font-size:17px}
-  .roster .item .sm{color:var(--muted);font-size:14px}
+  .roster .item .nm{font-family:"Gowun Batang",serif;font-weight:700;font-size:18.5px;display:inline-flex;align-items:center;gap:8px}
+  .roster .item .sm{color:var(--muted);font-size:15.5px}
   .roster .item .go{margin-left:auto;border:none;background:none;font:inherit;color:var(--accent-text);cursor:pointer;font-weight:500}
   .rowlink{flex:1;min-width:0;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:10px}
 
@@ -407,18 +432,18 @@
     margin-top:14px;background:var(--surface);border:1px solid var(--ink);border-left:3px solid var(--accent);
     border-radius:3px;overflow:hidden;
   }
-  .undotitle{padding:10px 15px 6px;font-size:13.5px;color:var(--muted)}
+  .undotitle{padding:10px 15px 6px;font-size:15px;color:var(--muted)}
   .undorow{display:flex;align-items:center;gap:10px;padding:8px 15px;border-top:1px solid var(--rule)}
   .undoname{font-weight:500;flex:1}
 
-  .btn{font:inherit;font-weight:500;cursor:pointer;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);border-radius:3px;padding:8px 16px}
+  .btn{font:inherit;font-weight:500;cursor:pointer;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);border-radius:4px;padding:10px 20px}
   .btn:hover{filter:brightness(1.08)}
   .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--rule-strong)}
   .btn.ghost:hover{border-color:var(--ink);filter:none}
-  .ti{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--rule-strong);border-radius:3px;padding:8px 10px}
+  .ti{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--rule-strong);border-radius:4px;padding:10px 12px}
 
   .field{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .field label{font-size:14px;color:var(--muted)}
+  .field label{font-size:15.5px;color:var(--muted)}
 
   .bigline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
   .bignum{font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(28px,7vw,42px);line-height:1.1}
@@ -427,26 +452,26 @@
   .hoverable{border-bottom:1px dotted var(--rule-strong);cursor:help}
   #tip{
     position:absolute;z-index:50;display:none;background:var(--surface);color:var(--ink);
-    border:1px solid var(--rule-strong);border-radius:4px;padding:9px 11px;font-size:14px;
+    border:1px solid var(--rule-strong);border-radius:4px;padding:9px 11px;font-size:15.5px;
     box-shadow:0 6px 20px rgba(0,0,0,.14);max-width:min(300px,86vw);
   }
-  #tip .tiphead{font-size:13.5px;color:var(--muted);margin-bottom:6px}
+  #tip .tiphead{font-size:15px;color:var(--muted);margin-bottom:6px}
   #tip .cal{border:none;box-shadow:none;background:none}
   #tip .cal .cell{border-color:transparent;min-height:26px}
 
   #datepop{
     position:absolute;z-index:60;display:none;background:var(--surface);color:var(--ink);
-    border:1px solid var(--rule-strong);border-radius:4px;padding:10px;font-size:14px;
+    border:1px solid var(--rule-strong);border-radius:4px;padding:10px;font-size:15.5px;
     box-shadow:0 6px 20px rgba(0,0,0,.16);width:260px;
   }
   #datepop .cal{border:none;box-shadow:none;background:none}
   #datepop .cal .cell{border-color:transparent;min-height:30px}
   #datepop .denav{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-  #datepop .delabel{font-family:"Gowun Batang",serif;font-weight:700;font-size:15.5px;flex:1;text-align:center}
-  #datepop .arrow{width:26px;height:26px;font-size:14px}
+  #datepop .delabel{font-family:"Gowun Batang",serif;font-weight:700;font-size:17px;flex:1;text-align:center}
+  #datepop .arrow{width:26px;height:26px;font-size:15.5px}
 
-  .note{color:var(--muted);font-size:14px;margin-top:10px}
-  .status{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:1em}
+  .note{color:var(--muted);font-size:15.5px;margin-top:10px}
+  .status{color:var(--muted);font-size:15px;margin-top:10px;min-height:1em}
   .status.warn{color:var(--danger)}
   .status.success{color:var(--accent-text);font-weight:500}
 
@@ -455,8 +480,8 @@
     .cell{min-height:60px}
     .cell .who{display:none}
     .wcell{min-height:70px;padding:4px 3px}
-    .wname{font-size:11px}
-    .personweekname{min-width:40px;font-size:16px}
+    .wname{font-size:12.5px}
+    .personweekname{min-width:40px;font-size:17.5px}
     .personweekbody{gap:8px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -506,6 +531,11 @@
     posts: [],              // [{id,title,content,createdAt,isNotice,noticeUntil,comments:[{id,name,content,createdAt}]}]
     boardSelId: null,       // 게시판에서 고른 글
     boardWriting: false,    // 게시판에서 새 글 작성 중인지
+    boardFromHome: false,   // 홈 공지사항에서 바로 들어왔는지 (뒤로가기 목적지 결정)
+    boardEditId: null,      // 수정 중인 게시글
+    boardFilter: "all",     // 게시판 탭: all | notice | free
+    boardPage: 1,           // 게시판 목록 페이지
+    commentEditId: null,    // 수정 중인 댓글
     coffeeFrontFirst: true, // 일요일에 "커피 앞"부터 시작할지, "커피 뒤"부터 시작할지
     adminPassword: "12345",
     adminUnlocked: false,  // 정산·관리자 메뉴에 새로 들어갈 때마다 다시 확인한다
@@ -897,6 +927,11 @@
     if(view==="board"){
       state.boardSelId=(opts.postId!==undefined)? opts.postId : null;
       state.boardWriting=false;
+      state.boardFromHome=!!opts.fromHome;
+      state.boardEditId=null;
+      state.commentEditId=null;
+      state.boardFilter="all";
+      state.boardPage=1;
     }
     subscribe(state.ym);
     if(view==="schedule") subscribeWeek(state.schedWeek);
@@ -923,6 +958,7 @@
       b.addEventListener("click", function(){
         if(backTo==="__admin_menu__"){ state.adminSection=null; render(true); }
         else if(backTo==="__board_list__"){ state.boardSelId=null; state.boardWriting=false; render(true); }
+        else if(backTo==="__board_detail__"){ state.boardEditId=null; render(true); }
         else go(backTo);
       });
       bar.appendChild(b);
@@ -1157,7 +1193,7 @@
         var row=el("button","noticerow");
         row.appendChild(el("span","noticerowtitle", n.title));
         row.appendChild(el("span","noticerowarrow","›"));
-        row.addEventListener("click", function(){ go("board",{ postId:n.id }); });
+        row.addEventListener("click", function(){ go("board",{ postId:n.id, fromHome:true }); });
         noticeList.appendChild(row);
       });
       noticeSection.appendChild(noticeList);
@@ -1205,6 +1241,8 @@
     return found;
   }
   function viewBoard(app){
+    if(state.boardEditId && !findPost(state.boardEditId)) state.boardEditId=null;
+    if(state.boardEditId){ renderPostEdit(app, state.boardEditId); return; }
     if(state.boardSelId && !findPost(state.boardSelId)) state.boardSelId=null;
     if(state.boardSelId){ renderPostDetail(app, state.boardSelId); return; }
     if(state.boardWriting){ renderBoardCompose(app); return; }
@@ -1212,32 +1250,75 @@
   }
   function renderBoardList(app){
     app.appendChild(topBar("게시판","home"));
-    var writeBtn=el("button","btn","글쓰기"); writeBtn.type="button";
-    writeBtn.style.marginBottom="14px";
-    writeBtn.addEventListener("click", function(){ state.boardWriting=true; render(true); });
-    app.appendChild(writeBtn);
 
-    if(!state.posts.length){
+    var tabs=el("div","boardtabs");
+    [["all","전체"],["notice","공지"],["free","자유"]].forEach(function(t){
+      var b=el("button","boardtab tab-"+t[0]+(state.boardFilter===t[0]?" on":""), t[1]);
+      b.type="button";
+      b.addEventListener("click", function(){
+        if(state.boardFilter===t[0]) return;
+        state.boardFilter=t[0]; state.boardPage=1; render(true);
+      });
+      tabs.appendChild(b);
+    });
+    app.appendChild(tabs);
+
+    var filtered=state.posts.filter(function(p){
+      if(state.boardFilter==="notice") return p.isNotice;
+      if(state.boardFilter==="free") return !p.isNotice;
+      return true;
+    });
+
+    var PAGE_SIZE=20;
+    var totalPages=Math.max(1, Math.ceil(filtered.length/PAGE_SIZE));
+    if(state.boardPage>totalPages) state.boardPage=totalPages;
+    if(state.boardPage<1) state.boardPage=1;
+    var startIdx=(state.boardPage-1)*PAGE_SIZE;
+    var pageItems=filtered.slice(startIdx, startIdx+PAGE_SIZE);
+
+    if(!filtered.length){
       var card=el("div","card");
       card.appendChild(el("div","empty","등록된 게시글이 없습니다."));
       app.appendChild(card);
-      return;
+    }else{
+      var listCard=el("div","card"), list=el("div","roster");
+      pageItems.forEach(function(p){
+        var item=el("div","item");
+        var link=el("button","rowlink");
+        var nm=el("span","nm");
+        nm.appendChild(el("span","posttag "+(p.isNotice?"notice":"free"), p.isNotice?"공지":"자유"));
+        nm.appendChild(el("span",null, p.title));
+        link.appendChild(nm);
+        link.appendChild(el("span","sm", (p.createdAt? dayLabel(p.createdAt.slice(0,10)) : "")+(p.isNotice? "" : " · 댓글 "+(p.comments? p.comments.length:0))));
+        link.appendChild(el("span","go","›"));
+        link.addEventListener("click", function(){
+          state.boardSelId=p.id; state.boardFromHome=false; render(true);
+        });
+        item.appendChild(link);
+        list.appendChild(item);
+      });
+      listCard.appendChild(list);
+      app.appendChild(listCard);
+
+      if(totalPages>1){
+        var pager=el("div","boardpager");
+        var prev=el("button","arrow","‹"); prev.type="button";
+        prev.disabled=(state.boardPage<=1);
+        prev.addEventListener("click", function(){ state.boardPage--; render(true); });
+        var label=el("span","pagerlabel", state.boardPage+" / "+totalPages);
+        var next=el("button","arrow","›"); next.type="button";
+        next.disabled=(state.boardPage>=totalPages);
+        next.addEventListener("click", function(){ state.boardPage++; render(true); });
+        pager.appendChild(prev); pager.appendChild(label); pager.appendChild(next);
+        app.appendChild(pager);
+      }
     }
-    var listCard=el("div","card"), list=el("div","roster");
-    state.posts.forEach(function(p){
-      var item=el("div","item");
-      var link=el("button","rowlink");
-      var nm=el("span","nm", p.title);
-      if(p.isNotice){ nm.appendChild(el("span","noticetag","공지")); }
-      link.appendChild(nm);
-      link.appendChild(el("span","sm", (p.createdAt? dayLabel(p.createdAt.slice(0,10)) : "")+(p.isNotice? "" : " · 댓글 "+(p.comments? p.comments.length:0))));
-      link.appendChild(el("span","go","›"));
-      link.addEventListener("click", function(){ state.boardSelId=p.id; render(true); });
-      item.appendChild(link);
-      list.appendChild(item);
-    });
-    listCard.appendChild(list);
-    app.appendChild(listCard);
+
+    var writeWrap=el("div","writewrap");
+    var writeBtn=el("button","btn","글쓰기"); writeBtn.type="button";
+    writeBtn.addEventListener("click", function(){ state.boardWriting=true; render(true); });
+    writeWrap.appendChild(writeBtn);
+    app.appendChild(writeWrap);
   }
   function renderBoardCompose(app){
     app.appendChild(topBar("글쓰기","__board_list__"));
@@ -1274,6 +1355,7 @@
       savePosts();
       state.boardWriting=false;
       state.boardSelId=post.id;
+      state.boardFromHome=false;
       render(true);
     });
     pad.appendChild(addBtn);
@@ -1281,33 +1363,100 @@
     card.appendChild(pad);
     app.appendChild(card);
   }
+  function renderPostEdit(app, id){
+    var p=findPost(id);
+    if(!p){ state.boardEditId=null; render(true); return; }
+    app.appendChild(topBar("게시글 수정","__board_detail__"));
+    var card=el("div","card");
+    var pad=el("div","pad");
+
+    var f1=el("div","field");
+    f1.appendChild(el("label",null,"제목"));
+    var titleI=document.createElement("input");
+    titleI.type="text"; titleI.className="ti"; titleI.style.flex="1";
+    titleI.value=p.title; titleI.maxLength=60;
+    f1.appendChild(titleI);
+    pad.appendChild(f1);
+
+    var f2=el("div","field");
+    f2.style.marginTop="10px"; f2.style.alignItems="flex-start";
+    f2.appendChild(el("label",null,"내용"));
+    var contentI=document.createElement("textarea");
+    contentI.className="ti"; contentI.style.flex="1"; contentI.style.minHeight="120px";
+    contentI.style.resize="vertical"; contentI.value=p.content;
+    f2.appendChild(contentI);
+    pad.appendChild(f2);
+
+    var msg=el("p","status","");
+    var saveBtn=el("button","btn","저장하기"); saveBtn.type="button";
+    saveBtn.style.marginTop="10px";
+    saveBtn.addEventListener("click", function(){
+      var title=titleI.value.trim(), content=contentI.value.trim();
+      if(!title){ msg.textContent="제목을 입력해 주세요."; msg.className="status warn"; return; }
+      if(!content){ msg.textContent="내용을 입력해 주세요."; msg.className="status warn"; return; }
+      state.posts=state.posts.map(function(x){
+        return x.id===id? Object.assign({}, x, { title:title, content:content }) : x;
+      });
+      savePosts();
+      msg.textContent="수정되었습니다.";
+      msg.className="status success";
+    });
+    pad.appendChild(saveBtn);
+    pad.appendChild(msg);
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
   function renderPostDetail(app, id){
     var p=findPost(id);
     if(!p){ state.boardSelId=null; render(true); return; }
-    app.appendChild(topBar(p.title, "__board_list__"));
+    var backTarget = state.boardFromHome ? "home" : "__board_list__";
+    app.appendChild(topBar(p.title, backTarget));
 
     var card=el("div","card");
-    var pad=el("div","pad");
-    var metaLine=el("div","noticedate", (p.createdAt? dayLabel(p.createdAt.slice(0,10)) : "")+(p.isNotice? " · 공지사항":""));
-    pad.appendChild(metaLine);
-    pad.appendChild(el("div","noticebody", p.content));
-
-    if(!p.isNotice){
-      var promoteMsg=el("p","status","");
-      var promoteBtn=el("button","btn ghost","공지사항으로 등록"); promoteBtn.type="button";
-      promoteBtn.style.marginTop="12px";
-      promoteBtn.addEventListener("click", function(){
-        state.posts=state.posts.map(function(x){
-          return x.id===id? Object.assign({}, x, { isNotice:true, noticeUntil: addDaysStr(todayStr(),7) }) : x;
-        });
-        savePosts();
-        promoteMsg.textContent="공지사항으로 등록되었습니다. 일주일 동안 홈 화면에 표시됩니다.";
-        promoteMsg.className="status success";
-        promoteBtn.disabled=true;
-      });
-      pad.appendChild(promoteBtn);
-      pad.appendChild(promoteMsg);
+    var head=el("div","card-head");
+    head.appendChild(el("div","m", (p.createdAt? dayLabel(p.createdAt.slice(0,10)) : "")+(p.isNotice? " · 공지사항":"")));
+    var actions=el("div","postactions");
+    var promoteBtn=el("button","actionbtn"+(p.isNotice?" on":""),"공지"); promoteBtn.type="button";
+    promoteBtn.addEventListener("click", function(){
+      var updated = p.isNotice
+        ? Object.assign({}, p, { isNotice:false, noticeUntil:null })
+        : Object.assign({}, p, { isNotice:true, noticeUntil: addDaysStr(todayStr(),7) });
+      state.posts=state.posts.map(function(x){ return x.id===id? updated : x; });
+      savePosts();
+      render(true);
+    });
+    actions.appendChild(promoteBtn);
+    if(p.isNotice){
+      var remain=Math.round((parseDateStr(p.noticeUntil)-parseDateStr(todayStr()))/86400000);
+      var liveMsg=el("span","noticelive",
+        remain>=0 ? "홈 화면에 "+remain+"일 동안 표시됩니다" : "홈 화면 표시 기간이 끝났습니다");
+      actions.appendChild(liveMsg);
     }
+    var editBtn=el("button","actionbtn","수정"); editBtn.type="button";
+    editBtn.addEventListener("click", function(){ state.boardEditId=id; render(true); });
+    actions.appendChild(editBtn);
+    var delBtn=el("button","actionbtn danger","삭제"); delBtn.type="button";
+    var delArmed=false, delTimer=null;
+    delBtn.addEventListener("click", function(){
+      if(!delArmed){
+        delArmed=true;
+        delBtn.textContent="삭제할까요?";
+        clearTimeout(delTimer);
+        delTimer=setTimeout(function(){ delArmed=false; delBtn.textContent="삭제"; }, 3000);
+        return;
+      }
+      clearTimeout(delTimer);
+      state.posts=state.posts.filter(function(x){ return x.id!==id; });
+      savePosts();
+      state.boardSelId=null;
+      render(true);
+    });
+    actions.appendChild(delBtn);
+    head.appendChild(actions);
+    card.appendChild(head);
+
+    var pad=el("div","pad");
+    pad.appendChild(el("div","noticebody", p.content));
     card.appendChild(pad);
     app.appendChild(card);
 
@@ -1325,11 +1474,67 @@
         var cList=el("div","commentlist");
         p.comments.forEach(function(c){
           var row=el("div","commentrow");
-          var top=el("div","commenttop");
-          top.appendChild(el("span","commentname", c.name));
-          top.appendChild(el("span","commentdate", c.createdAt? dayLabel(c.createdAt.slice(0,10)) : ""));
-          row.appendChild(top);
-          row.appendChild(el("div","commenttext", c.content));
+          if(state.commentEditId===c.id){
+            var enameI=document.createElement("input");
+            enameI.type="text"; enameI.className="ti"; enameI.style.width="110px";
+            enameI.value=c.name; enameI.maxLength=20;
+            var ef=el("div","field"); ef.appendChild(enameI);
+            row.appendChild(ef);
+            var ebodyI=document.createElement("textarea");
+            ebodyI.className="ti"; ebodyI.style.width="100%"; ebodyI.style.minHeight="60px";
+            ebodyI.style.resize="vertical"; ebodyI.value=c.content;
+            var ef2=el("div","field"); ef2.style.marginTop="6px"; ef2.style.alignItems="flex-start";
+            ef2.appendChild(ebodyI);
+            row.appendChild(ef2);
+            var emsg=el("p","status","");
+            var saveCBtn=el("button","btn","저장"); saveCBtn.type="button"; saveCBtn.style.marginTop="6px";
+            saveCBtn.addEventListener("click", function(){
+              var nm=enameI.value.trim(), bd=ebodyI.value.trim();
+              if(!nm){ emsg.textContent="이름을 입력해 주세요."; emsg.className="status warn"; return; }
+              if(!bd){ emsg.textContent="내용을 입력해 주세요."; emsg.className="status warn"; return; }
+              state.posts=state.posts.map(function(x){
+                if(x.id!==id) return x;
+                var newComments=x.comments.map(function(cc){
+                  return cc.id===c.id? { id:cc.id, name:nm, content:bd, createdAt:cc.createdAt } : cc;
+                });
+                return Object.assign({}, x, { comments:newComments });
+              });
+              savePosts();
+              state.commentEditId=null;
+              render(true);
+            });
+            row.appendChild(saveCBtn);
+            row.appendChild(emsg);
+          }else{
+            var top=el("div","commenttop");
+            top.appendChild(el("span","commentname", c.name));
+            top.appendChild(el("span","commentdate", c.createdAt? dayLabel(c.createdAt.slice(0,10)) : ""));
+            var cActions=el("div","commentactions");
+            var cEditBtn=el("button","actionbtn","수정"); cEditBtn.type="button";
+            cEditBtn.addEventListener("click", function(){ state.commentEditId=c.id; render(true); });
+            var cDelBtn=el("button","actionbtn danger","삭제"); cDelBtn.type="button";
+            var cDelArmed=false, cDelTimer=null;
+            cDelBtn.addEventListener("click", function(){
+              if(!cDelArmed){
+                cDelArmed=true;
+                cDelBtn.textContent="삭제할까요?";
+                clearTimeout(cDelTimer);
+                cDelTimer=setTimeout(function(){ cDelArmed=false; cDelBtn.textContent="삭제"; }, 3000);
+                return;
+              }
+              clearTimeout(cDelTimer);
+              state.posts=state.posts.map(function(x){
+                if(x.id!==id) return x;
+                return Object.assign({}, x, { comments:x.comments.filter(function(cc){ return cc.id!==c.id; }) });
+              });
+              savePosts();
+              render(true);
+            });
+            cActions.appendChild(cEditBtn); cActions.appendChild(cDelBtn);
+            top.appendChild(cActions);
+            row.appendChild(top);
+            row.appendChild(el("div","commenttext", c.content));
+          }
           cList.appendChild(row);
         });
         cPad.appendChild(cList);
