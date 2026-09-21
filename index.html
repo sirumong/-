@@ -10,7 +10,8 @@
 <meta name="theme-color" content="#4DB848">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@kfonts/nexon-lv1-gothic/index.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
   var SUPABASE_URL = "https://xrushybvdckfvlbhhfld.supabase.co";
@@ -149,7 +150,7 @@
   html,body{margin:0;padding:0}
   body{
     background:var(--bg); color:var(--ink);
-    font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    font-family:'넥슨Lv1고딕','NEXON Lv1 Gothic',"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
     font-size:17.5px; line-height:1.55; -webkit-text-size-adjust:100%;
     font-variant-numeric:tabular-nums;
   }
@@ -447,7 +448,7 @@
 
   .bigline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
   .bignum{font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(28px,7vw,42px);line-height:1.1}
-  .bignum span{font-size:.4em;font-family:"IBM Plex Sans KR",sans-serif;font-weight:400;margin-left:2px}
+  .bignum span{font-size:.4em;font-family:'넥슨Lv1고딕','NEXON Lv1 Gothic',sans-serif;font-weight:400;margin-left:2px}
 
   .hoverable{border-bottom:1px dotted var(--rule-strong);cursor:help}
   #tip{
@@ -1165,7 +1166,7 @@
     chart:'<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path><path d="M4 20h14"></path>',
     user:'<circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path>',
     userplus:'<circle cx="10" cy="8" r="4"></circle><path d="M2 21c0-4.4 3.2-7 8-7s8 2.6 8 7"></path><path d="M19 8v6M16 11h6"></path>',
-    gear:'<path d="M12.594 3.94c.09 -.542 .56 -.94 1.11 -.94h.552c.55 0 1.02 .398 1.11 .94l.213 1.281c.063 .374 .313 .686 .645 .87c.074 .04 .147 .083 .22 .127c.324 .196 .72 .257 1.075 .124l1.217 -.456a1.125 1.125 0 0 1 1.37 .49l.275 .477c.281 .48 .162 1.09 -.28 1.43l-1.03 .79c-.298 .228 -.45 .6 -.436 .97c.003 .078 .006 .157 .006 .236s-.003 .158 -.006 .236c-.015 .37 .137 .742 .436 .97l1.03 .79c.44 .34 .56 .95 .28 1.43l-.275 .477c-.281 .48 -.83 .68 -1.37 .49l-1.217 -.456c-.355 -.133 -.751 -.072 -1.075 .124a6.59 6.59 0 0 1 -.22 .127c-.332 .184 -.582 .496 -.645 .87l-.213 1.28c-.09 .543 -.56 .941 -1.11 .941h-.552c-.55 0 -1.02 -.398 -1.11 -.94l-.213 -1.281c-.063 -.374 -.313 -.686 -.645 -.87a5.997 5.997 0 0 1 -.22 -.127c-.324 -.196 -.72 -.257 -1.075 -.124l-1.217 .456a1.125 1.125 0 0 1 -1.37 -.49l-.275 -.477a1.125 1.125 0 0 1 .28 -1.43l1.03 -.79c.298 -.228 .45 -.6 .436 -.97a6.007 6.007 0 0 1 -.006 -.236c0 -.079 .003 -.158 .006 -.236c.015 -.37 -.137 -.742 -.436 -.97l-1.03 -.79a1.125 1.125 0 0 1 -.28 -1.43l.275 -.477c.281 -.48 .83 -.68 1.37 -.49l1.217 .456c.355 .133 .751 .072 1.075 -.124c.072 -.044 .146 -.086 .22 -.127c.332 -.184 .582 -.496 .645 -.87l.213 -1.28z"></path><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>',
+    gear:'<path d="M12.00 2.70 L14.68 5.53 L18.58 5.42 L18.47 9.32 L21.30 12.00 L18.47 14.68 L18.58 18.58 L14.68 18.47 L12.00 21.30 L9.32 18.47 L5.42 18.58 L5.53 14.68 L2.70 12.00 L5.53 9.32 L5.42 5.42 L9.32 5.53 Z"></path><circle cx="12" cy="12" r="3.3"></circle>',
     megaphone:'<path d="M3 11v2a1 1 0 0 0 1 1h2l9 4V6l-9 4H4a1 1 0 0 0-1 1z"></path><path d="M10 18v2a2 2 0 0 0 4 0v-1"></path>'
   };
   function iconSvg(name, size){
