@@ -118,7 +118,10 @@
         };
       }
 
-      return { doc: docRef, collection: collectionRef };
+      function wipeAll(){
+        return client.from(TABLE).delete().neq("key", "__never_matches__");
+      }
+      return { doc: docRef, collection: collectionRef, wipeAll: wipeAll };
     }
 
     return tryLoad(0);
@@ -445,6 +448,8 @@
   .undoname{font-weight:500;flex:1}
 
   .btn{font:inherit;font-weight:500;cursor:pointer;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);border-radius:4px;padding:10px 20px}
+  .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
   .btn:hover{filter:brightness(1.08)}
   .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--rule-strong)}
   .btn.ghost:hover{border-color:var(--ink);filter:none}
@@ -2687,7 +2692,8 @@
       [
         ["password","관리자 비밀번호 변경","현재 비밀번호를 새 숫자 5자리로 바꿉니다"],
         ["settle","정산","근무자별 월 근무 시간과 시급으로 월급을 계산합니다"],
-        ["backup","데이터 백업","백업 파일로 저장하거나 불러옵니다"]
+        ["backup","데이터 백업","백업 파일로 저장하거나 불러옵니다"],
+        ["reset","전체 초기화","모든 기록을 지우고 처음 상태로 되돌립니다"]
       ].forEach(function(t){
         var b=el("button","tile");
         b.appendChild(el("span","t",t[1]));
@@ -2710,6 +2716,9 @@
     }else if(state.adminSection==="backup"){
       app.appendChild(topBar("데이터 백업","__admin_menu__"));
       appendBackupSection(app);
+    }else if(state.adminSection==="reset"){
+      app.appendChild(topBar("전체 초기화","__admin_menu__"));
+      renderResetCard(app);
     }
   }
 
@@ -2889,6 +2898,71 @@
       };
       reader.readAsText(file);
     });
+
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
+  function renderResetCard(app){
+    var card=el("div","card");
+    var pad=el("div","pad");
+
+    pad.appendChild(el("div","empty",
+      "근무자, 출퇴근 기록, 인수인계, 근무표, 게시판/공지사항, 관리자 비밀번호까지 모든 기록이 지워지고 처음 상태로 되돌아갑니다. 되돌릴 수 없으니 꼭 필요할 때만 사용해 주세요."));
+
+    var f=el("div","field");
+    f.style.marginTop="14px";
+    f.appendChild(el("label",null,"확인을 위해 \"초기화\"라고 입력해 주세요"));
+    var confirmI=document.createElement("input");
+    confirmI.type="text"; confirmI.className="ti"; confirmI.style.flex="1";
+    confirmI.placeholder="초기화";
+    f.appendChild(confirmI);
+    pad.appendChild(f);
+
+    var msg=el("p","status","");
+    var goBtn=el("button","btn danger","전체 초기화"); goBtn.type="button";
+    goBtn.style.marginTop="10px";
+    goBtn.disabled=true;
+    confirmI.addEventListener("input", function(){
+      goBtn.disabled = (confirmI.value.trim()!=="초기화");
+    });
+    goBtn.addEventListener("click", function(){
+      if(confirmI.value.trim()!=="초기화") return;
+      goBtn.disabled=true;
+      msg.textContent="초기화하는 중입니다...";
+      msg.className="status";
+      var localWipe=function(){
+        try{ localStorage.removeItem(LS_KEY); }catch(e){}
+        try{ localStorage.removeItem(REMOVED_KEY); }catch(e){}
+        try{ localStorage.removeItem(RECENT_REMOVED_KEY); }catch(e){}
+      };
+      var remoteWipe = (db && db.wipeAll) ? db.wipeAll() : Promise.resolve();
+      remoteWipe.then(function(){
+        localWipe();
+        state.employees=[];
+        state.data={};
+        state.handover={};
+        state.schedule={};
+        state.posts=[];
+        state.coffeeFrontFirst=true;
+        state.adminPassword="12345";
+        removedIds=new Set();
+        var jobs=[ saveEmployees(), saveAdminPassword(), saveCoffeeSetting(), savePosts() ];
+        return Promise.all(jobs);
+      }).then(function(){
+        msg.textContent="초기화되었습니다. 비밀번호도 12345로 초기화되었습니다.";
+        msg.className="status success";
+        confirmI.value="";
+      }).catch(function(e){
+        console.error(e);
+        localWipe();
+        msg.textContent="초기화 중 일부 오류가 있었습니다. 새로고침 후 다시 확인해 주세요.";
+        msg.className="status warn";
+        goBtn.disabled=false;
+      });
+    });
+    pad.appendChild(goBtn);
+    pad.appendChild(msg);
 
     card.appendChild(pad);
     app.appendChild(card);
