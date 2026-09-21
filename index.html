@@ -236,7 +236,7 @@
   .commentname{font-weight:500;font-size:15px}
   .commentdate{font-size:13.5px;color:var(--muted)}
   .commenttext{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
-  .noticeicon{flex:none;display:flex;color:var(--feature)}
+  .noticeicon{flex:none;display:flex;color:var(--feature);position:relative;top:-2px}
   .noticetext{font-size:23px;font-weight:500;color:var(--ink)}
   .noticeempty{padding:14px;color:var(--muted);font-size:15px}
   .noticelist{display:flex;flex-direction:column}
@@ -274,9 +274,11 @@
   }
   .gridtile:hover{border-color:var(--ink)}
   .gridicon{color:var(--ink);margin-bottom:8px;font-size:28px;line-height:1}
-  .gridtitle{font-size:15.5px;font-weight:500;color:var(--ink)}
+  .gridtitle{font-size:17px;font-weight:600;color:var(--ink)}
 
   .noticedate{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .posttitlewrap{margin-top:16px}
+  .posttitle{font-weight:700;font-size:19.5px}
   .noticebody{font-size:15.5px;line-height:1.6;white-space:pre-wrap}
 
   @media (max-width:560px){
@@ -1416,7 +1418,11 @@
     var p=findPost(id);
     if(!p){ state.boardSelId=null; render(true); return; }
     var backTarget = state.boardFromHome ? "home" : "__board_list__";
-    app.appendChild(topBar(p.title, backTarget));
+    app.appendChild(topBar("게시글", backTarget));
+
+    var titleWrap=el("div","posttitlewrap");
+    titleWrap.appendChild(el("div","posttitle", p.title));
+    app.appendChild(titleWrap);
 
     var card=el("div","card");
     var head=el("div","card-head");
