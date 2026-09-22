@@ -2678,7 +2678,7 @@
 
     var wrap=el("div","table-wrap");
     var table=document.createElement("table");
-    table.innerHTML="<thead><tr><th>근무자</th><th class='num'>총 근무 시간</th><th class='num'>시급</th><th class='num'>월급</th></tr></thead>";
+    table.innerHTML="<thead><tr><th>근무자</th><th class='num'>총 근무 시간</th><th class='num'>시급</th><th class='num'>월급(세후)</th></tr></thead>";
     var tb=document.createElement("tbody");
     var rowRefs=[];
 
@@ -2702,7 +2702,9 @@
 
       function payOf(){
         var w=parseFloat(wageI.value);
-        return (w>0)? Math.floor(totalMin/60*w) : 0;
+        if(!(w>0)) return 0;
+        var gross=totalMin/60*w;
+        return Math.floor(gross*(1-0.033));
       }
       function paintRow(){
         var w=parseFloat(wageI.value);
@@ -2747,7 +2749,7 @@
     wrap.appendChild(table);
     card.appendChild(wrap);
     app.appendChild(card);
-    app.appendChild(el("p","note","시급을 적으면 그 근무자의 이 달 월급이 자동으로 계산됩니다. 세금이나 주휴수당은 포함되지 않은 단순 계산입니다."));
+    app.appendChild(el("p","note","시급을 적으면 근무 시간과 곱한 금액에서 3.3% 세금(사업소득세)을 뗀 금액이 월급으로 표시됩니다. 주휴수당은 포함되지 않은 단순 계산입니다."));
   }
 
   /* ---- 관리자 ---- */
