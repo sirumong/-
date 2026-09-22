@@ -156,6 +156,7 @@
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
+  *{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   body{
     background:var(--bg); color:var(--ink);
     font-family:'NEXON Lv1 Gothic',"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -1117,7 +1118,7 @@
     var left = entry.role==="open" ? "오픈" : (entry.inT||"");
     var right = entry.role==="close" ? "마감" : (entry.outT||"");
     if(!left && !right) return "";
-    if(left && right) return left+"-"+right;
+    if(left && right) return left+"\u2011"+right;
     return left||right;
   }
   function entryLabel(entry){
@@ -2382,7 +2383,7 @@
     var calMap=scheduleDayIndex(state.schedCalYm);
     app.appendChild(buildCalendar(state.schedCalYm, calMap, {
       selected: state.schedCalSelDate,
-      showHours: true,
+      showHours: false,
       onPick: function(ds){ state.schedCalSelDate=ds; render(true); }
     }));
 
@@ -3081,7 +3082,7 @@
   /* ===================== render ===================== */
   function isEditing(){
     var a=document.activeElement;
-    return a && (a.tagName==="INPUT") && a.id!=="wage" && a.closest("#app");
+    return a && (a.tagName==="INPUT"||a.tagName==="TEXTAREA") && a.id!=="wage" && a.closest("#app");
   }
   var pending=false;
   function render(force){
@@ -3105,9 +3106,13 @@
     app.appendChild(s);
     document.title=(VIEWS[v]?VIEWS[v].title:"창릉 프리미어")+" — 창릉 프리미어";
   }
-  document.addEventListener("focusout", function(){
-    setTimeout(function(){ if(pending && !isEditing()) render(); }, 0);
-  });
+  function flushPending(){
+    if(pending && !isEditing()) render();
+  }
+  document.addEventListener("focusout", function(){ setTimeout(flushPending, 0); });
+  document.addEventListener("pointerdown", function(e){
+    if(pending && document.activeElement && e.target!==document.activeElement){ flushPending(); }
+  }, true);
 
   /* ===================== boot ===================== */
   loadLocal();
