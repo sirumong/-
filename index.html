@@ -834,19 +834,28 @@
       render();
     }, dbErr));
   }
-  var subWeek=null, weekSub=null;
+  var scheduleSubs={};
+  function subscribeScheduleWeeks(neededWeeks){
+    if(!db) return;
+    var needSet={};
+    neededWeeks.forEach(function(w){ needSet[w]=true; });
+    Object.keys(scheduleSubs).forEach(function(w){
+      if(!needSet[w]){ try{scheduleSubs[w]();}catch(e){} delete scheduleSubs[w]; }
+    });
+    neededWeeks.forEach(function(w){
+      if(scheduleSubs[w]) return;
+      scheduleSubs[w]=db.doc("schedule/"+w).onSnapshot(function(s){
+        var raw=(s.exists && s.data().days) || {};
+        var days={};
+        Object.keys(raw).forEach(function(ds){ days[ds]=cloneList(raw[ds]); });
+        if(JSON.stringify(days)===JSON.stringify(state.schedule[w]||{})) return;
+        state.schedule[w]=days;
+        render();
+      }, dbErr);
+    });
+  }
   function subscribeWeek(weekStart){
-    if(!db || subWeek===weekStart) return;
-    subWeek=weekStart;
-    if(weekSub){ try{weekSub();}catch(e){} weekSub=null; }
-    weekSub=db.doc("schedule/"+weekStart).onSnapshot(function(s){
-      var raw=(s.exists && s.data().days) || {};
-      var days={};
-      Object.keys(raw).forEach(function(ds){ days[ds]=cloneList(raw[ds]); });
-      if(JSON.stringify(days)===JSON.stringify(state.schedule[weekStart]||{})) return;
-      state.schedule[weekStart]=days;
-      render();
-    }, dbErr);
+    subscribeScheduleWeeks(uniqueWeeks([weekStart].concat(weeksOverlappingMonth(state.schedCalYm))));
   }
   function weeksOverlappingMonth(ym){
     var first=ym+"-01";
@@ -857,24 +866,13 @@
     while(w<=lastWeek){ weeks.push(w); w=addDaysStr(w,7); }
     return weeks;
   }
-  var calSubs={};
+  function uniqueWeeks(list){
+    var seen={}, out=[];
+    list.forEach(function(w){ if(!seen[w]){ seen[w]=true; out.push(w); } });
+    return out;
+  }
   function subscribeCalMonth(ym){
-    if(!db) return;
-    var needed=weeksOverlappingMonth(ym);
-    Object.keys(calSubs).forEach(function(w){
-      if(needed.indexOf(w)<0){ try{calSubs[w]();}catch(e){} delete calSubs[w]; }
-    });
-    needed.forEach(function(w){
-      if(calSubs[w]) return;
-      calSubs[w]=db.doc("schedule/"+w).onSnapshot(function(s){
-        var raw=(s.exists && s.data().days) || {};
-        var days={};
-        Object.keys(raw).forEach(function(ds){ days[ds]=cloneList(raw[ds]); });
-        if(JSON.stringify(days)===JSON.stringify(state.schedule[w]||{})) return;
-        state.schedule[w]=days;
-        render();
-      }, dbErr);
-    });
+    subscribeScheduleWeeks(uniqueWeeks([state.schedWeek].concat(weeksOverlappingMonth(ym))));
   }
   function scheduleDayIndex(ym){
     var map={};
