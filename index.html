@@ -157,6 +157,9 @@
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   *{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  body{-webkit-user-select:none;user-select:none}
+  input,textarea{-webkit-user-select:text;user-select:text}
+  .noticebody,.commenttext,.posttitle,.commentname,.commentdate,.noticedate{-webkit-user-select:text;user-select:text}
   body{
     background:var(--bg); color:var(--ink);
     font-family:'NEXON Lv1 Gothic',"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -2505,7 +2508,7 @@
     function persist(newEntries){
       setScheduleDayEntries(weekStart, ds, newEntries);
       saveSchedule(weekStart);
-      render(true);
+      setTimeout(function(){ render(true); }, 0);
     }
     function addToDay(empId){ persist(entries.concat([{ empId:empId, role:null, inT:"", outT:"" }])); }
     function removeFromDay(empId){ persist(entries.filter(function(e){ return e.empId!==empId; })); }
