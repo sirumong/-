@@ -1115,6 +1115,9 @@
       else if(e.role==="close") close.push(e);
       else mid.push(e);
     });
+    function byIn(a,b){ return (a.inT||"").localeCompare(b.inT||""); }
+    mid.sort(byIn);
+    close.sort(byIn);
     return open.concat(mid).concat(close);
   }
   function timeRangeText(entry){
