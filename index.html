@@ -2373,7 +2373,6 @@
   /* ---- 근무표 ---- */
   function viewSchedule(app){
     app.appendChild(topBar("근무표","home"));
-    app.appendChild(coffeeToggle());
     if(!activeEmployees().length){ noWorkerNotice(app); return; }
 
     var weekStart=state.schedWeek;
@@ -2417,6 +2416,7 @@
     app.appendChild(dcard);
 
     app.appendChild(weekPicker());
+    app.appendChild(coffeeToggle());
     app.appendChild(buildWeekGrid(weekStart, days));
 
     if(state.schedSelDate && days.indexOf(state.schedSelDate)>=0){
