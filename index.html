@@ -336,7 +336,7 @@
     display:grid;grid-template-columns:repeat(7,1fr);
     background:var(--surface);border:1px solid var(--ink);border-radius:4px;overflow:hidden;
   }
-  .wcell{position:relative;border-right:1px solid var(--rule);min-height:96px}
+  .wcell{position:relative;border-right:1px solid var(--rule);min-height:96px;min-width:0}
   .wcell .num{display:block;margin-bottom:1em}
   .coffeebadge{position:absolute;top:5px;right:6px;font-size:14px;color:#6F4E37;line-height:1;white-space:nowrap;font-weight:700}
   .coffeetoggle{display:flex;align-items:center;gap:8px;margin:10px 0 4px}
@@ -496,10 +496,16 @@
     .wrap{padding:18px 11px 80px}
     .cell{min-height:60px}
     .cell .who{display:none}
-    .wcell{min-height:70px;padding:4px 3px}
+    .wcell{min-height:76px;padding:4px 3px}
     .wname{font-size:12.5px}
     .personweekname{min-width:40px;font-size:17.5px}
     .personweekbody{gap:8px}
+    .coffeebadge{position:static;display:block;text-align:left;font-size:10.5px;margin-top:1px;white-space:normal}
+    .wdow{font-size:13.5px}
+    .wcell .num{margin-bottom:.3em;font-size:13px}
+    table{min-width:0}
+    th,td{padding:6px 5px;font-size:13.5px}
+    th{font-size:12.5px;white-space:normal}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
