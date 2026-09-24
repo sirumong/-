@@ -335,11 +335,10 @@
   .cal.chips-mode .cell.today .num{color:var(--accent-text)}
   .cal.chips-mode .cell.sun .num{color:var(--sun)} .cal.chips-mode .cell.sat .num{color:var(--sat)}
 
-  .calnav{display:flex;align-items:center;justify-content:space-between;margin:16px 0 12px;position:relative}
+  .calnav{display:flex;align-items:center;gap:10px;margin:16px 0 12px;position:relative}
   .calnavlabel{font-size:18px;font-weight:700;color:var(--ink);background:none;border:none;cursor:pointer;padding:0;font-family:inherit}
   .calnavlabel:hover{text-decoration:underline}
   .calnavhidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
-  .calnavbtns{display:flex;gap:6px}
   .calnavbtn{
     width:30px;height:30px;border-radius:9px;background:var(--surface);box-shadow:var(--shadow);
     border:none;font-size:14px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -542,6 +541,14 @@
   .btn:disabled{opacity:.5;cursor:not-allowed}
   .btn:hover{filter:brightness(1.08)}
   .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--rule-strong)}
+  .checkrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .checkbtn{
+    min-width:44px;height:44px;padding:0 10px;border-radius:10px;
+    background:var(--surface);box-shadow:var(--shadow);border:none;
+    font:inherit;font-size:15.5px;font-weight:600;color:var(--ink);cursor:pointer;
+  }
+  .checkbtn.on{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+  .checkbtn-wide{padding:0 16px}
   .btn.ghost:hover{border-color:var(--ink);filter:none}
   .ti{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 12px}
 
@@ -634,6 +641,7 @@
     selDate: null,      // 매장 근무 기록에서 고른 날짜
     salesSelDate: null, // 관리자 > 매장 매출에서 고른 날짜
     handoverEditId: null, // 인수인계 기록 중 수정 중인 것
+    checklist: {},         // 체크리스트 항목별 체크 여부
     clockEmp: null,     // 출퇴근 기록에서 고른 근무자
     employees: [],      // [{id,name,wage}]
     data: {},            // data[ym][empId] = [{id,date,inT,outT}]
@@ -669,6 +677,7 @@
     add:      { title:"근무자 추가" },
     handover: { title:"일일 인수인계" },
     board:    { title:"게시판" },
+    checklist:{ title:"체크리스트" },
     admin:    { title:"관리자" },
     schedule: { title:"근무표" }
   };
@@ -808,6 +817,7 @@
     state.coffeeFrontFirst=(all.coffeeFrontFirst!==undefined)? all.coffeeFrontFirst : true;
     state.adminPassword=all.adminPassword||"12345";
     state.posts=all.posts||[];
+    state.checklist=all.checklist||{};
     applyRemovedOverride();
   }
   function saveEmployees(){
@@ -836,6 +846,13 @@
       return db.doc("config/posts").set({ list: state.posts });
     });
     var all=readLocal(); all.posts=state.posts; writeLocal(all);
+    return Promise.resolve();
+  }
+  function saveChecklist(){
+    if(db) return queued("checklist", function(){
+      return db.doc("config/checklist").set({ items: state.checklist });
+    });
+    var all=readLocal(); all.checklist=state.checklist; writeLocal(all);
     return Promise.resolve();
   }
   function saveMonth(ym, empId){
@@ -940,6 +957,12 @@
       var list=cloneList((s.exists && s.data().list)||[]);
       if(JSON.stringify(list)===JSON.stringify(state.posts)) return;
       state.posts=list;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/checklist").onSnapshot(function(s){
+      var obj=Object.assign({}, (s.exists && s.data().items)||{});
+      if(JSON.stringify(obj)===JSON.stringify(state.checklist)) return;
+      state.checklist=obj;
       render();
     }, dbErr));
     subs.push(db.collection("shifts").where("ym","==",ym).onSnapshot(function(q){
@@ -1153,86 +1176,44 @@
     return bar;
   }
 
-  function monthPicker(){
-    var box=el("div","pick");
-    box.appendChild(el("div","label", ymLabel(state.ym)));
-    var prev=el("button","arrow","‹"); prev.setAttribute("aria-label","이전 달");
-    var next=el("button","arrow","›"); next.setAttribute("aria-label","다음 달");
-    var inp=document.createElement("input");
-    inp.type="month"; inp.value=state.ym; inp.setAttribute("aria-label","년도와 월 선택");
-    prev.addEventListener("click", function(){ step(-1); });
-    next.addEventListener("click", function(){ step(1); });
-    inp.addEventListener("change", function(){ if(inp.value) setYm(inp.value); });
-    function step(d){
-      var p=state.ym.split("-");
-      setYm(ymOf(new Date(+p[0], +p[1]-1+d, 1)));
-    }
-    box.appendChild(prev); box.appendChild(inp); box.appendChild(next);
-    return box;
-  }
-
-  function storeMonthPicker(){
+  function calNavPicker(ym, onSet){
     var box=el("div","calnav");
     var monthInput=document.createElement("input");
-    monthInput.type="month"; monthInput.value=state.ym; monthInput.className="calnavhidden";
+    monthInput.type="month"; monthInput.value=ym; monthInput.className="calnavhidden";
     monthInput.setAttribute("aria-label","년도와 월 선택");
-    monthInput.addEventListener("change", function(){ if(monthInput.value) setYm(monthInput.value); });
+    monthInput.addEventListener("change", function(){ if(monthInput.value) onSet(monthInput.value); });
 
-    var labelBtn=el("button","calnavlabel", ymLabel(state.ym)); labelBtn.type="button";
-    labelBtn.addEventListener("click", function(){
-      if(monthInput.showPicker){ try{ monthInput.showPicker(); }catch(e){ monthInput.focus(); } }
-      else{ monthInput.focus(); }
-    });
-    box.appendChild(labelBtn);
-    box.appendChild(monthInput);
-
-    var btns=el("div","calnavbtns");
     var prev=el("button","calnavbtn","‹"); prev.type="button"; prev.setAttribute("aria-label","이전 달");
     var next=el("button","calnavbtn","›"); next.type="button"; next.setAttribute("aria-label","다음 달");
     prev.addEventListener("click", function(){ step(-1); });
     next.addEventListener("click", function(){ step(1); });
     function step(d){
-      var p=state.ym.split("-");
-      setYm(ymOf(new Date(+p[0], +p[1]-1+d, 1)));
+      var p=ym.split("-");
+      onSet(ymOf(new Date(+p[0], +p[1]-1+d, 1)));
     }
-    btns.appendChild(prev); btns.appendChild(next);
-    box.appendChild(btns);
+
+    var labelBtn=el("button","calnavlabel", ymLabel(ym)); labelBtn.type="button";
+    labelBtn.addEventListener("click", function(){
+      if(monthInput.showPicker){ try{ monthInput.showPicker(); }catch(e){ monthInput.focus(); } }
+      else{ monthInput.focus(); }
+    });
+
+    box.appendChild(prev);
+    box.appendChild(labelBtn);
+    box.appendChild(next);
+    box.appendChild(monthInput);
     return box;
   }
-
+  function ymNavPicker(){
+    return calNavPicker(state.ym, setYm);
+  }
   function schedCalMonthPicker(){
-    var box=el("div","calnav");
-    function setCalYm(ym){
+    return calNavPicker(state.schedCalYm, function(ym){
       state.schedCalYm=ym;
       state.schedCalSelDate=null;
       subscribeCalMonth(ym);
       render(true);
-    }
-    var monthInput=document.createElement("input");
-    monthInput.type="month"; monthInput.value=state.schedCalYm; monthInput.className="calnavhidden";
-    monthInput.setAttribute("aria-label","년도와 월 선택");
-    monthInput.addEventListener("change", function(){ if(monthInput.value) setCalYm(monthInput.value); });
-
-    var labelBtn=el("button","calnavlabel", ymLabel(state.schedCalYm)); labelBtn.type="button";
-    labelBtn.addEventListener("click", function(){
-      if(monthInput.showPicker){ try{ monthInput.showPicker(); }catch(e){ monthInput.focus(); } }
-      else{ monthInput.focus(); }
     });
-    box.appendChild(labelBtn);
-    box.appendChild(monthInput);
-
-    var btns=el("div","calnavbtns");
-    var prev=el("button","calnavbtn","‹"); prev.type="button"; prev.setAttribute("aria-label","이전 달");
-    var next=el("button","calnavbtn","›"); next.type="button"; next.setAttribute("aria-label","다음 달");
-    prev.addEventListener("click", function(){ step(-1); });
-    next.addEventListener("click", function(){ step(1); });
-    function step(d){
-      var p=state.schedCalYm.split("-");
-      setCalYm(ymOf(new Date(+p[0], +p[1]-1+d, 1)));
-    }
-    btns.appendChild(prev); btns.appendChild(next);
-    box.appendChild(btns);
-    return box;
   }
 
   function weekRangeLabel(weekStart){
@@ -1449,7 +1430,8 @@
     megaphone:'<path d="M3 11v2a1 1 0 0 0 1 1h2l9 4V6l-9 4H4a1 1 0 0 0-1 1z"></path><path d="M10 18v2a2 2 0 0 0 4 0v-1"></path>',
     flag:'<path d="M6 3v18"></path><path d="M6 5l13 5-13 5"></path>',
     download:'<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><path d="M12 3v13"></path><path d="M7 11l5 5 5-5"></path>',
-    refresh:'<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path>'
+    refresh:'<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path>',
+    checklist:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 12l3 3 6-6"></path>'
   };
   function iconSvg(name, size){
     return '<svg width="'+(size||22)+'" height="'+(size||22)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||"")+'</svg>';
@@ -1507,6 +1489,7 @@
       ["people","개인 근무 확인","user"],
       ["add","근무자 추가","userplus"],
       ["board","게시판","flag"],
+      ["checklist","체크리스트","checklist"],
       ["admin","관리자","gear"]
     ].forEach(function(t){
       var card=el("button","gridtile");
@@ -1525,6 +1508,61 @@
     state.posts.forEach(function(p){ if(p.id===id) found=p; });
     return found;
   }
+  function viewChecklist(app){
+    app.appendChild(topBar("체크리스트","home"));
+
+    var card=el("div","card");
+    var pad=el("div","pad");
+
+    pad.appendChild(el("div","addlabel","번호 체크"));
+    var numRow=el("div","checkrow");
+    for(var i=1;i<=14;i++){
+      (function(n){
+        var key=String(n);
+        var b=el("button","checkbtn"+(state.checklist[key]?" on":""), String(n));
+        b.type="button";
+        b.addEventListener("click", function(){
+          state.checklist[key]=!state.checklist[key];
+          saveChecklist();
+          b.className="checkbtn"+(state.checklist[key]?" on":"");
+        });
+        numRow.appendChild(b);
+      })(i);
+    }
+    pad.appendChild(numRow);
+
+    pad.appendChild(el("div","addlabel","마감 체크"));
+    var nameRow=el("div","checkrow");
+    [["coffee","커피 마감"],["kitchen","주방 마감"],["recycle","분리수거"]].forEach(function(t){
+      var b=el("button","checkbtn checkbtn-wide"+(state.checklist[t[0]]?" on":""), t[1]);
+      b.type="button";
+      b.addEventListener("click", function(){
+        state.checklist[t[0]]=!state.checklist[t[0]];
+        saveChecklist();
+        b.className="checkbtn checkbtn-wide"+(state.checklist[t[0]]?" on":"");
+      });
+      nameRow.appendChild(b);
+    });
+    pad.appendChild(nameRow);
+
+    var resetMsg=el("p","status","");
+    var resetBtn=el("button","btn ghost","전체 초기화"); resetBtn.type="button";
+    resetBtn.style.marginTop="16px";
+    resetBtn.addEventListener("click", function(){
+      state.checklist={};
+      saveChecklist();
+      numRow.querySelectorAll("button").forEach(function(b){ b.className="checkbtn"; });
+      nameRow.querySelectorAll("button").forEach(function(b){ b.className="checkbtn checkbtn-wide"; });
+      resetMsg.textContent="모두 초기화되었습니다.";
+      resetMsg.className="status success";
+    });
+    pad.appendChild(resetBtn);
+    pad.appendChild(resetMsg);
+
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
   function viewBoard(app){
     if(state.boardEditId && !findPost(state.boardEditId)) state.boardEditId=null;
     if(state.boardEditId){ renderPostEdit(app, state.boardEditId); return; }
@@ -1868,7 +1906,7 @@
   /* ---- 매장 근무 기록 ---- */
   function viewStore(app){
     app.appendChild(topBar("매장 근무 기록","home"));
-    app.appendChild(storeMonthPicker());
+    app.appendChild(ymNavPicker());
     var map=dayIndex(state.ym);
     app.appendChild(buildCalendar(state.ym, map, {
       selected: state.selDate,
@@ -1913,7 +1951,7 @@
     app.appendChild(topBar("출퇴근 기록","home"));
     if(!activeEmployees().length){ noWorkerNotice(app); return; }
 
-    app.appendChild(monthPicker());
+    app.appendChild(ymNavPicker());
     app.appendChild(el("p","lede","근무자를 고른 뒤, 날짜와 출근·퇴근 시간을 적고 ‘기록 추가’를 누르면 저장됩니다."));
     var chips=el("div","chips");
     activeEmployees().forEach(function(emp){
@@ -2066,7 +2104,7 @@
   /* ---- 전체 근무 확인 ---- */
   function viewOverall(app){
     app.appendChild(topBar("전체 근무 확인","home"));
-    app.appendChild(monthPicker());
+    app.appendChild(ymNavPicker());
     if(!state.employees.length){ noWorkerNotice(app); return; }
 
     var card=el("div","card");
@@ -2133,7 +2171,7 @@
     var emp=empById(state.empId);
     if(!emp || emp.active===false){ go("people"); return; }
     app.appendChild(topBar(emp.name+" 근무 기록","people"));
-    app.appendChild(monthPicker());
+    app.appendChild(ymNavPicker());
 
     var map=dayIndex(state.ym, [emp.id]);
     app.appendChild(buildCalendar(state.ym, map, {
@@ -2450,7 +2488,7 @@
   }
   function viewHandover(app){
     app.appendChild(topBar("일일 인수인계","home"));
-    app.appendChild(monthPicker());
+    app.appendChild(ymNavPicker());
 
     var ym=state.ym;
     var map=handoverDayMap(ym);
@@ -3054,7 +3092,7 @@
       renderPasswordChangeCard(app);
     }else if(state.adminSection==="settle"){
       app.appendChild(topBar("정산","__admin_menu__"));
-      app.appendChild(monthPicker());
+      app.appendChild(ymNavPicker());
       if(!activeEmployees().length){ noWorkerNotice(app); return; }
       renderSettleContent(app);
     }else if(state.adminSection==="backup"){
@@ -3062,7 +3100,7 @@
       appendBackupSection(app);
     }else if(state.adminSection==="sales"){
       app.appendChild(topBar("매장 매출","__admin_menu__"));
-      app.appendChild(monthPicker());
+      app.appendChild(ymNavPicker());
       var salesYm=state.ym;
       var salesMap=handoverDayMap(salesYm);
       app.appendChild(buildHandoverCalendar(salesYm, salesMap, {
@@ -3160,6 +3198,7 @@
       schedule: state.schedule,
       coffeeFrontFirst: state.coffeeFrontFirst,
       posts: state.posts,
+      checklist: state.checklist,
       adminPassword: state.adminPassword,
       removedIds: Array.from(removedIds)
     };
@@ -3172,6 +3211,7 @@
     state.handover = (payload.handover && typeof payload.handover==="object") ? payload.handover : {};
     state.schedule = (payload.schedule && typeof payload.schedule==="object") ? payload.schedule : {};
     state.posts = Array.isArray(payload.posts) ? payload.posts : [];
+    state.checklist = (payload.checklist && typeof payload.checklist==="object") ? payload.checklist : {};
     if(typeof payload.coffeeFrontFirst==="boolean") state.coffeeFrontFirst=payload.coffeeFrontFirst;
     if(typeof payload.adminPassword==="string" && payload.adminPassword) state.adminPassword=payload.adminPassword;
     removedIds = new Set(Array.isArray(payload.removedIds)? payload.removedIds : []);
@@ -3182,6 +3222,7 @@
     saveAdminPassword();
     saveCoffeeSetting();
     savePosts();
+    saveChecklist();
     var jobs=[];
     Object.keys(state.data).forEach(function(ym){
       Object.keys(state.data[ym]||{}).forEach(function(id){ jobs.push(saveMonth(ym,id)); });
@@ -3311,10 +3352,11 @@
         state.handover={};
         state.schedule={};
         state.posts=[];
+        state.checklist={};
         state.coffeeFrontFirst=true;
         state.adminPassword="12345";
         removedIds=new Set();
-        var jobs=[ saveEmployees(), saveAdminPassword(), saveCoffeeSetting(), savePosts() ];
+        var jobs=[ saveEmployees(), saveAdminPassword(), saveCoffeeSetting(), savePosts(), saveChecklist() ];
         return Promise.all(jobs);
       }).then(function(){
         msg.textContent="초기화되었습니다. 비밀번호도 12345로 초기화되었습니다.";
@@ -3356,6 +3398,7 @@
     else if(v==="add") viewAdd(app);
     else if(v==="handover") viewHandover(app);
     else if(v==="board") viewBoard(app);
+    else if(v==="checklist") viewChecklist(app);
     else if(v==="schedule") viewSchedule(app);
     else if(v==="admin") viewAdmin(app);
     var s=el("p","status"); s.id="statusLine";
