@@ -541,6 +541,8 @@
   .btn:disabled{opacity:.5;cursor:not-allowed}
   .btn:hover{filter:brightness(1.08)}
   .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--rule-strong)}
+  .btn.ghost.danger{color:var(--danger)}
+  .prepayactions{display:flex;gap:8px;margin-top:10px}
   .checkrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
   .checkbtn{
     min-width:44px;height:44px;padding:0 10px;border-radius:10px;
@@ -683,6 +685,8 @@
     prepayAmtVisits: {},    // 고객id별 사용 기록(서명 포함)
     prepayAmtSelId: null,   // 선택된 금액 선결제 고객
     prepayTab: "count",     // 선결제 목록 탭: count | amt
+    prepayEditId: null,     // 수정 중인 횟수 선결제 고객
+    prepayAmtEditId: null,  // 수정 중인 금액 선결제 고객
     clockEmp: null,     // 출퇴근 기록에서 고른 근무자
     employees: [],      // [{id,name,wage}]
     data: {},            // data[ym][empId] = [{id,date,inT,outT}]
@@ -1223,8 +1227,8 @@
     hideTip();
     state.view=view;
     if(opts.empId!==undefined) state.empId=opts.empId;
-    if(opts.prepayId!==undefined){ state.prepaySelId=opts.prepayId; state.prepayTab="count"; }
-    if(opts.prepayAmtId!==undefined){ state.prepayAmtSelId=opts.prepayAmtId; state.prepayTab="amt"; }
+    if(opts.prepayId!==undefined){ state.prepaySelId=opts.prepayId; state.prepayTab="count"; state.prepayEditId=null; }
+    if(opts.prepayAmtId!==undefined){ state.prepayAmtSelId=opts.prepayAmtId; state.prepayTab="amt"; state.prepayAmtEditId=null; }
     if(opts.ym) state.ym=opts.ym;
     if(view==="store") state.selDate=null;
     if(view==="clock") state.clockEmp=null;
@@ -1839,7 +1843,59 @@
 
     var infoCard2=el("div","card");
     var infoPad=el("div","pad");
-    infoPad.appendChild(el("div","empty", (cust.phone? cust.phone+" · " : "")+"선결제 금액 "+fmtWon(cust.amount)));
+    if(state.prepayEditId===cust.id){
+      var eLine=el("div","addline wide");
+      var eName=document.createElement("input"); eName.type="text"; eName.className="ti"; eName.value=cust.name; eName.placeholder="이름";
+      var ePhone=document.createElement("input"); ePhone.type="tel"; ePhone.className="ti"; ePhone.value=cust.phone||""; ePhone.placeholder="연락처";
+      var eAmount=numberField(cust.amount); eAmount.placeholder="선결제 금액";
+      var eTotal=numberField(cust.totalCount); eTotal.placeholder="구매 횟수";
+      eLine.appendChild(eName); eLine.appendChild(ePhone); eLine.appendChild(eAmount); eLine.appendChild(eTotal);
+      infoPad.appendChild(eLine);
+      var eMsg=el("p","status","");
+      var eSave=el("button","btn","저장"); eSave.type="button";
+      eSave.addEventListener("click", function(){
+        var name=eName.value.trim();
+        if(!name){ eMsg.textContent="이름을 입력해 주세요."; eMsg.className="status error"; return; }
+        var updated=Object.assign({}, cust, {
+          name:name, phone:ePhone.value.trim(),
+          amount:parseFloat(eAmount.value)||0, totalCount:parseFloat(eTotal.value)||0
+        });
+        state.prepayCustomers=state.prepayCustomers.map(function(x){ return x.id===cust.id? updated : x; });
+        savePrepayCustomers();
+        state.prepayEditId=null;
+        render(true);
+      });
+      var eCancel=el("button","btn ghost","취소"); eCancel.type="button";
+      eCancel.style.marginLeft="8px";
+      eCancel.addEventListener("click", function(){ state.prepayEditId=null; render(true); });
+      infoPad.appendChild(eSave); infoPad.appendChild(eCancel); infoPad.appendChild(eMsg);
+    }else{
+      infoPad.appendChild(el("div","empty", (cust.phone? cust.phone+" · " : "")+"선결제 금액 "+fmtWon(cust.amount)));
+      var actions=el("div","prepayactions");
+      var editBtn=el("button","btn ghost","수정"); editBtn.type="button";
+      editBtn.addEventListener("click", function(){ state.prepayEditId=cust.id; render(true); });
+      actions.appendChild(editBtn);
+      var delBtn=el("button","btn ghost danger","삭제"); delBtn.type="button";
+      var delArmed=false, delTimer=null;
+      delBtn.addEventListener("click", function(){
+        if(!delArmed){
+          delArmed=true; delBtn.textContent="삭제할까요?";
+          clearTimeout(delTimer);
+          delTimer=setTimeout(function(){ delArmed=false; delBtn.textContent="삭제"; }, 3000);
+          return;
+        }
+        clearTimeout(delTimer);
+        state.prepayCustomers=state.prepayCustomers.filter(function(x){ return x.id!==cust.id; });
+        var visitsMap=Object.assign({}, state.prepayVisits);
+        delete visitsMap[cust.id];
+        state.prepayVisits=visitsMap;
+        savePrepayCustomers();
+        savePrepayVisits();
+        go("prepay");
+      });
+      actions.appendChild(delBtn);
+      infoPad.appendChild(actions);
+    }
     infoCard2.appendChild(infoPad);
     app.appendChild(infoCard2);
 
@@ -2004,7 +2060,7 @@
 
   function viewPrepayAmtDetail(app){
     var cust=state.prepayAmtCustomers.find(function(c){ return c.id===state.prepayAmtSelId; });
-    if(!cust){ go("prepayamt"); return; }
+    if(!cust){ go("prepay"); return; }
     app.appendChild(topBar(cust.name,"prepay"));
 
     var existingVisits=state.prepayAmtVisits[cust.id]||[];
@@ -2025,13 +2081,61 @@
     infoCard.appendChild(infoStats);
     app.appendChild(infoCard);
 
-    if(cust.phone){
-      var infoCard2=el("div","card");
-      var infoPad=el("div","pad");
-      infoPad.appendChild(el("div","empty", cust.phone));
-      infoCard2.appendChild(infoPad);
-      app.appendChild(infoCard2);
+    var infoCard2=el("div","card");
+    var infoPad=el("div","pad");
+    if(state.prepayAmtEditId===cust.id){
+      var eLine=el("div","addline wide");
+      var eName=document.createElement("input"); eName.type="text"; eName.className="ti"; eName.value=cust.name; eName.placeholder="이름";
+      var ePhone=document.createElement("input"); ePhone.type="tel"; ePhone.className="ti"; ePhone.value=cust.phone||""; ePhone.placeholder="연락처";
+      var eAmount=numberField(cust.amount); eAmount.placeholder="선결제 금액";
+      eLine.appendChild(eName); eLine.appendChild(ePhone); eLine.appendChild(eAmount);
+      infoPad.appendChild(eLine);
+      var eMsg=el("p","status","");
+      var eSave=el("button","btn","저장"); eSave.type="button";
+      eSave.addEventListener("click", function(){
+        var name=eName.value.trim();
+        if(!name){ eMsg.textContent="이름을 입력해 주세요."; eMsg.className="status error"; return; }
+        var updated=Object.assign({}, cust, {
+          name:name, phone:ePhone.value.trim(), amount:parseFloat(eAmount.value)||0
+        });
+        state.prepayAmtCustomers=state.prepayAmtCustomers.map(function(x){ return x.id===cust.id? updated : x; });
+        savePrepayAmtCustomers();
+        state.prepayAmtEditId=null;
+        render(true);
+      });
+      var eCancel=el("button","btn ghost","취소"); eCancel.type="button";
+      eCancel.style.marginLeft="8px";
+      eCancel.addEventListener("click", function(){ state.prepayAmtEditId=null; render(true); });
+      infoPad.appendChild(eSave); infoPad.appendChild(eCancel); infoPad.appendChild(eMsg);
+    }else{
+      if(cust.phone) infoPad.appendChild(el("div","empty", cust.phone));
+      var actions=el("div","prepayactions");
+      var editBtn=el("button","btn ghost","수정"); editBtn.type="button";
+      editBtn.addEventListener("click", function(){ state.prepayAmtEditId=cust.id; render(true); });
+      actions.appendChild(editBtn);
+      var delBtn=el("button","btn ghost danger","삭제"); delBtn.type="button";
+      var delArmed=false, delTimer=null;
+      delBtn.addEventListener("click", function(){
+        if(!delArmed){
+          delArmed=true; delBtn.textContent="삭제할까요?";
+          clearTimeout(delTimer);
+          delTimer=setTimeout(function(){ delArmed=false; delBtn.textContent="삭제"; }, 3000);
+          return;
+        }
+        clearTimeout(delTimer);
+        state.prepayAmtCustomers=state.prepayAmtCustomers.filter(function(x){ return x.id!==cust.id; });
+        var visitsMap=Object.assign({}, state.prepayAmtVisits);
+        delete visitsMap[cust.id];
+        state.prepayAmtVisits=visitsMap;
+        savePrepayAmtCustomers();
+        savePrepayAmtVisits();
+        go("prepay");
+      });
+      actions.appendChild(delBtn);
+      infoPad.appendChild(actions);
     }
+    infoCard2.appendChild(infoPad);
+    app.appendChild(infoCard2);
 
     var form=el("div","addrow");
     form.appendChild(el("div","addlabel","사용 기록 추가"));
