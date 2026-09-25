@@ -549,6 +549,40 @@
   }
   .checkbtn.on{background:var(--accent);color:var(--accent-ink);box-shadow:none}
   .checkbtn-wide{padding:0 16px}
+
+  .sigpad{margin:14px 0 4px;max-width:760px}
+  .sigcanvaswrap{position:relative}
+  .sigcanvas{
+    display:block;width:100%;aspect-ratio:760/320;
+    background:#fff;border-radius:12px;box-shadow:var(--shadow);
+    cursor:crosshair;touch-action:none;
+  }
+  .sighint{
+    position:absolute;top:0;left:0;right:0;bottom:0;display:flex;
+    align-items:center;justify-content:center;color:var(--rule-strong);
+    font-size:14px;pointer-events:none;
+  }
+  .visitlist{display:flex;flex-direction:column;gap:14px}
+  .visititem{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+  .visititem:last-child{border-bottom:none;padding-bottom:0}
+  .visitinfo{display:flex;align-items:center;gap:10px}
+  .visitdate{font-size:14.5px;font-weight:600;color:var(--ink)}
+  .visitcount{font-size:13px;color:var(--muted)}
+  .visitcum{font-size:12.5px;color:var(--accent-text);background:var(--accent-soft);padding:2px 8px;border-radius:999px}
+  .prepaysearch{padding-top:14px;padding-bottom:0}
+  .prepaysearchempty{padding-top:0}
+  .visitinfo .rowdel{margin-left:auto}
+  .sigthumb{width:90px;max-width:100%;border-radius:6px;box-shadow:var(--shadow);background:#fff}
+  .remaincard{
+    background:var(--surface);box-shadow:var(--shadow);border-radius:16px;
+    padding:20px;margin:16px 0;text-align:center;
+  }
+  .remainnum{font-size:32px;font-weight:700;color:var(--accent-text)}
+  .remainnum.low{color:var(--danger)}
+  .remainstats{display:flex;justify-content:center;gap:28px;margin-top:10px}
+  .remainstat{display:flex;flex-direction:column;align-items:center}
+  .remainstatnum{font-size:17px;font-weight:700;color:var(--ink)}
+  .remainstatlabel{font-size:12.5px;color:var(--muted);margin-top:2px}
   .btn.ghost:hover{border-color:var(--ink);filter:none}
   .ti{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 12px}
 
@@ -642,6 +676,13 @@
     salesSelDate: null, // 관리자 > 매장 매출에서 고른 날짜
     handoverEditId: null, // 인수인계 기록 중 수정 중인 것
     checklist: {},         // 체크리스트 항목별 체크 여부
+    prepayCustomers: [],   // 횟수 선결제 고객 목록
+    prepayVisits: {},      // 고객id별 방문 기록(서명 포함)
+    prepaySelId: null,     // 선택된 횟수 선결제 고객
+    prepayAmtCustomers: [], // 금액 선결제 고객 목록
+    prepayAmtVisits: {},    // 고객id별 사용 기록(서명 포함)
+    prepayAmtSelId: null,   // 선택된 금액 선결제 고객
+    prepayTab: "count",     // 선결제 목록 탭: count | amt
     clockEmp: null,     // 출퇴근 기록에서 고른 근무자
     employees: [],      // [{id,name,wage}]
     data: {},            // data[ym][empId] = [{id,date,inT,outT}]
@@ -678,6 +719,9 @@
     handover: { title:"일일 인수인계" },
     board:    { title:"게시판" },
     checklist:{ title:"체크리스트" },
+    prepay:{ title:"선결제" },
+    prepaydetail:{ title:"연습장 선결제" },
+    prepayamtdetail:{ title:"금액 선결제" },
     admin:    { title:"관리자" },
     schedule: { title:"근무표" }
   };
@@ -818,6 +862,10 @@
     state.adminPassword=all.adminPassword||"12345";
     state.posts=all.posts||[];
     state.checklist=all.checklist||{};
+    state.prepayCustomers=all.prepayCustomers||[];
+    state.prepayVisits=all.prepayVisits||{};
+    state.prepayAmtCustomers=all.prepayAmtCustomers||[];
+    state.prepayAmtVisits=all.prepayAmtVisits||{};
     applyRemovedOverride();
   }
   function saveEmployees(){
@@ -853,6 +901,34 @@
       return db.doc("config/checklist").set({ items: state.checklist });
     });
     var all=readLocal(); all.checklist=state.checklist; writeLocal(all);
+    return Promise.resolve();
+  }
+  function savePrepayCustomers(){
+    if(db) return queued("prepayCustomers", function(){
+      return db.doc("config/prepayCustomers").set({ list: state.prepayCustomers });
+    });
+    var all=readLocal(); all.prepayCustomers=state.prepayCustomers; writeLocal(all);
+    return Promise.resolve();
+  }
+  function savePrepayVisits(){
+    if(db) return queued("prepayVisits", function(){
+      return db.doc("config/prepayVisits").set({ byCustomer: state.prepayVisits });
+    });
+    var all=readLocal(); all.prepayVisits=state.prepayVisits; writeLocal(all);
+    return Promise.resolve();
+  }
+  function savePrepayAmtCustomers(){
+    if(db) return queued("prepayAmtCustomers", function(){
+      return db.doc("config/prepayAmtCustomers").set({ list: state.prepayAmtCustomers });
+    });
+    var all=readLocal(); all.prepayAmtCustomers=state.prepayAmtCustomers; writeLocal(all);
+    return Promise.resolve();
+  }
+  function savePrepayAmtVisits(){
+    if(db) return queued("prepayAmtVisits", function(){
+      return db.doc("config/prepayAmtVisits").set({ byCustomer: state.prepayAmtVisits });
+    });
+    var all=readLocal(); all.prepayAmtVisits=state.prepayAmtVisits; writeLocal(all);
     return Promise.resolve();
   }
   function saveMonth(ym, empId){
@@ -963,6 +1039,30 @@
       var obj=Object.assign({}, (s.exists && s.data().items)||{});
       if(JSON.stringify(obj)===JSON.stringify(state.checklist)) return;
       state.checklist=obj;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/prepayCustomers").onSnapshot(function(s){
+      var list=cloneList((s.exists && s.data().list)||[]);
+      if(JSON.stringify(list)===JSON.stringify(state.prepayCustomers)) return;
+      state.prepayCustomers=list;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/prepayVisits").onSnapshot(function(s){
+      var obj=Object.assign({}, (s.exists && s.data().byCustomer)||{});
+      if(JSON.stringify(obj)===JSON.stringify(state.prepayVisits)) return;
+      state.prepayVisits=obj;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/prepayAmtCustomers").onSnapshot(function(s){
+      var list=cloneList((s.exists && s.data().list)||[]);
+      if(JSON.stringify(list)===JSON.stringify(state.prepayAmtCustomers)) return;
+      state.prepayAmtCustomers=list;
+      render();
+    }, dbErr));
+    subs.push(db.doc("config/prepayAmtVisits").onSnapshot(function(s){
+      var obj=Object.assign({}, (s.exists && s.data().byCustomer)||{});
+      if(JSON.stringify(obj)===JSON.stringify(state.prepayAmtVisits)) return;
+      state.prepayAmtVisits=obj;
       render();
     }, dbErr));
     subs.push(db.collection("shifts").where("ym","==",ym).onSnapshot(function(q){
@@ -1123,6 +1223,8 @@
     hideTip();
     state.view=view;
     if(opts.empId!==undefined) state.empId=opts.empId;
+    if(opts.prepayId!==undefined){ state.prepaySelId=opts.prepayId; state.prepayTab="count"; }
+    if(opts.prepayAmtId!==undefined){ state.prepayAmtSelId=opts.prepayAmtId; state.prepayTab="amt"; }
     if(opts.ym) state.ym=opts.ym;
     if(view==="store") state.selDate=null;
     if(view==="clock") state.clockEmp=null;
@@ -1431,7 +1533,8 @@
     flag:'<path d="M6 3v18"></path><path d="M6 5l13 5-13 5"></path>',
     download:'<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><path d="M12 3v13"></path><path d="M7 11l5 5 5-5"></path>',
     refresh:'<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path>',
-    checklist:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 12l3 3 6-6"></path>'
+    checklist:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 12l3 3 6-6"></path>',
+    pen:'<path d="M4 20h4l10-10-4-4-10 10z"></path><path d="M14 6l4 4"></path>'
   };
   function iconSvg(name, size){
     return '<svg width="'+(size||22)+'" height="'+(size||22)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||"")+'</svg>';
@@ -1490,6 +1593,7 @@
       ["add","근무자 추가","userplus"],
       ["board","게시판","flag"],
       ["checklist","체크리스트","checklist"],
+      ["prepay","선결제","pen"],
       ["admin","관리자","gear"]
     ].forEach(function(t){
       var card=el("button","gridtile");
@@ -1561,6 +1665,458 @@
 
     card.appendChild(pad);
     app.appendChild(card);
+  }
+
+  /* ---- 선결제 고객 ---- */
+  function buildSignaturePad(){
+    var wrap=el("div","sigpad");
+    var canvasWrap=el("div","sigcanvaswrap");
+    var canvas=document.createElement("canvas");
+    canvas.width=760; canvas.height=320; canvas.className="sigcanvas";
+    canvas.style.touchAction="none";
+    canvasWrap.appendChild(canvas);
+    var hint=el("div","sighint","여기에 서명해 주세요");
+    canvasWrap.appendChild(hint);
+    wrap.appendChild(canvasWrap);
+    var ctx=canvas.getContext("2d");
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#1F2A22";
+    var drawing=false, lastX=0, lastY=0, hasSignature=false;
+
+    function pos(e){
+      var rect=canvas.getBoundingClientRect();
+      var scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+      return { x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY };
+    }
+    canvas.addEventListener("pointerdown", function(e){
+      drawing=true; hasSignature=true;
+      var p=pos(e); lastX=p.x; lastY=p.y;
+      if(canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    canvas.addEventListener("pointermove", function(e){
+      if(!drawing) return;
+      var p=pos(e);
+      ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke();
+      lastX=p.x; lastY=p.y;
+      e.preventDefault();
+    });
+    function stop(){ drawing=false; }
+    canvas.addEventListener("pointerup", stop);
+    canvas.addEventListener("pointerleave", stop);
+    canvas.addEventListener("pointercancel", stop);
+
+    canvas.addEventListener("pointerdown", function(){ hint.style.display="none"; });
+
+    var clearBtn=el("button","btn ghost","지우기"); clearBtn.type="button";
+    clearBtn.addEventListener("click", function(){
+      ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+      hasSignature=false;
+      hint.style.display="";
+    });
+    wrap.appendChild(clearBtn);
+
+    return {
+      el: wrap,
+      isEmpty: function(){ return !hasSignature; },
+      toDataURL: function(){ return canvas.toDataURL("image/png"); }
+    };
+  }
+
+  function viewPrepay(app){
+    app.appendChild(topBar("선결제","home"));
+
+    var tabs=el("div","schedtabs");
+    [["count","연습장 선결제"],["amt","금액 선결제"]].forEach(function(t){
+      var b=el("button","schedtab"+(state.prepayTab===t[0]?" on":""), t[1]);
+      b.type="button";
+      b.addEventListener("click", function(){
+        if(state.prepayTab===t[0]) return;
+        state.prepayTab=t[0]; render(true);
+      });
+      tabs.appendChild(b);
+    });
+    app.appendChild(tabs);
+
+    if(state.prepayTab==="amt"){ renderPrepayAmtTab(app); return; }
+
+    var form=el("div","addrow");
+    form.appendChild(el("div","addlabel","새 연습장 선결제 고객 등록"));
+    var line=el("div","addline wide");
+    var nameI=document.createElement("input"); nameI.type="text"; nameI.className="ti"; nameI.placeholder="이름";
+    var phoneI=document.createElement("input"); phoneI.type="tel"; phoneI.className="ti"; phoneI.placeholder="연락처";
+    var amountI=numberField(null); amountI.placeholder="선결제 금액";
+    var totalCountI=numberField(null); totalCountI.placeholder="구매 횟수";
+    line.appendChild(nameI); line.appendChild(phoneI); line.appendChild(amountI); line.appendChild(totalCountI);
+    form.appendChild(line);
+    var msg=el("p","status","");
+    var addBtn=el("button","btn","고객 추가"); addBtn.type="button";
+    addBtn.addEventListener("click", function(){
+      var name=nameI.value.trim();
+      if(!name){ msg.textContent="이름을 입력해 주세요."; msg.className="status error"; return; }
+      var row={ id:uid(), name:name, phone:phoneI.value.trim(), amount:parseFloat(amountI.value)||0, totalCount:parseFloat(totalCountI.value)||0, createdAt:new Date().toISOString() };
+      state.prepayCustomers=state.prepayCustomers.concat([row]);
+      savePrepayCustomers();
+      msg.textContent="";
+      render(true);
+    });
+    form.appendChild(addBtn);
+    form.appendChild(msg);
+    app.appendChild(form);
+
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","등록된 연습장 선결제 고객"));
+    head.appendChild(el("div","m", state.prepayCustomers.length+"명"));
+    card.appendChild(head);
+    if(!state.prepayCustomers.length){
+      var pad=el("div","pad");
+      pad.appendChild(el("div","empty","등록된 선결제 고객이 없습니다."));
+      card.appendChild(pad);
+    }else{
+      var searchWrap=el("div","pad prepaysearch");
+      var searchI=document.createElement("input");
+      searchI.type="search"; searchI.className="ti"; searchI.placeholder="이름으로 검색";
+      searchWrap.appendChild(searchI);
+      card.appendChild(searchWrap);
+
+      var emptySearch=el("div","pad prepaysearchempty");
+      emptySearch.appendChild(el("div","empty","검색 결과가 없습니다."));
+      emptySearch.style.display="none";
+      card.appendChild(emptySearch);
+
+      var list=el("div","roster");
+      var rowRefs=[];
+      state.prepayCustomers.forEach(function(c){
+        var visits=state.prepayVisits[c.id]||[];
+        var item=el("div","item");
+        var link=el("button","rowlink");
+        link.appendChild(el("span","nm", c.name));
+        link.appendChild(el("span","sm", (c.phone? c.phone+" · " : "")+fmtWon(c.amount)+" · 방문 "+visits.length+"회"));
+        link.appendChild(el("span","go","보기 ›"));
+        link.addEventListener("click", function(){ go("prepaydetail",{prepayId:c.id}); });
+        item.appendChild(link);
+        list.appendChild(item);
+        rowRefs.push({ el:item, name:c.name });
+      });
+      searchI.addEventListener("input", function(){
+        var q=searchI.value.trim().toLowerCase();
+        var anyShown=false;
+        rowRefs.forEach(function(r){
+          var match=!q || r.name.toLowerCase().indexOf(q)>=0;
+          r.el.style.display=match? "" : "none";
+          if(match) anyShown=true;
+        });
+        emptySearch.style.display=anyShown? "none" : "";
+      });
+      card.appendChild(list);
+    }
+    app.appendChild(card);
+  }
+
+  function viewPrepayDetail(app){
+    var cust=state.prepayCustomers.find(function(c){ return c.id===state.prepaySelId; });
+    if(!cust){ go("prepay"); return; }
+    app.appendChild(topBar(cust.name,"prepay"));
+
+    var existingVisits=state.prepayVisits[cust.id]||[];
+    var usedCount=existingVisits.reduce(function(sum,v){ return sum+(v.count||0); },0);
+    var remaining=(cust.totalCount||0)-usedCount;
+
+    var infoCard=el("div","remaincard");
+    infoCard.appendChild(el("div","remainnum"+(remaining<=0?" low":""), remaining+"회 남음"));
+    var infoStats=el("div","remainstats");
+    var stat=el("div","remainstat");
+    stat.appendChild(el("span","remainstatnum", (cust.totalCount||0)+"회"));
+    stat.appendChild(el("span","remainstatlabel","구매"));
+    infoStats.appendChild(stat);
+    var stat2=el("div","remainstat");
+    stat2.appendChild(el("span","remainstatnum", usedCount+"회"));
+    stat2.appendChild(el("span","remainstatlabel","사용"));
+    infoStats.appendChild(stat2);
+    infoCard.appendChild(infoStats);
+    app.appendChild(infoCard);
+
+    var infoCard2=el("div","card");
+    var infoPad=el("div","pad");
+    infoPad.appendChild(el("div","empty", (cust.phone? cust.phone+" · " : "")+"선결제 금액 "+fmtWon(cust.amount)));
+    infoCard2.appendChild(infoPad);
+    app.appendChild(infoCard2);
+
+    var form=el("div","addrow");
+    form.appendChild(el("div","addlabel","방문 기록 추가"));
+    var line=el("div","addline");
+    var dateBtn=document.createElement("button");
+    dateBtn.type="button"; dateBtn.className="ti datebtn";
+    var draft={ date: todayStr() };
+    dateBtn.textContent=dayLabel(draft.date);
+    dateBtn.addEventListener("click", function(){
+      openDatePicker(dateBtn, draft.date, function(ds){ draft.date=ds; dateBtn.textContent=dayLabel(ds); });
+    });
+    line.appendChild(dateBtn);
+    line.appendChild(el("span","addsep","횟수"));
+    var countI=numberField(1); countI.min="1";
+    line.appendChild(countI);
+    form.appendChild(line);
+
+    var sig=buildSignaturePad();
+    form.appendChild(sig.el);
+
+    var msg=el("p","status","");
+    var saveBtn=el("button","btn","방문 기록 저장"); saveBtn.type="button";
+    saveBtn.style.marginTop="10px";
+    saveBtn.addEventListener("click", function(){
+      if(sig.isEmpty()){ msg.textContent="서명을 받아 주세요."; msg.className="status error"; return; }
+      var visit={ id:uid(), date:draft.date, count:parseFloat(countI.value)||1, signature:sig.toDataURL(), createdAt:new Date().toISOString() };
+      var list=(state.prepayVisits[cust.id]||[]).concat([visit]);
+      state.prepayVisits=Object.assign({}, state.prepayVisits);
+      state.prepayVisits[cust.id]=list;
+      savePrepayVisits();
+      msg.textContent="";
+      render(true);
+    });
+    form.appendChild(saveBtn);
+    form.appendChild(msg);
+    app.appendChild(form);
+
+    var visitsAsc=(state.prepayVisits[cust.id]||[]).slice().sort(function(a,b){
+      return (a.date||"").localeCompare(b.date||"") || (a.createdAt||"").localeCompare(b.createdAt||"");
+    });
+    var cumMap={}, cumSum=0;
+    visitsAsc.forEach(function(v){ cumSum+=(v.count||0); cumMap[v.id]=cumSum; });
+    var visits=visitsAsc.slice().sort(function(a,b){
+      return (b.date||"").localeCompare(a.date||"") || (b.createdAt||"").localeCompare(a.createdAt||"");
+    });
+    var vcard=el("div","card");
+    var vhead=el("div","card-head");
+    vhead.appendChild(el("div","h","방문 기록"));
+    vhead.appendChild(el("div","m", visits.length+"건"));
+    vcard.appendChild(vhead);
+    if(!visits.length){
+      var vpad=el("div","pad");
+      vpad.appendChild(el("div","empty","방문 기록이 없습니다."));
+      vcard.appendChild(vpad);
+    }else{
+      var vlist=el("div","visitlist");
+      visits.forEach(function(v){
+        var row=el("div","visititem");
+        var vinfo=el("div","visitinfo");
+        vinfo.appendChild(el("div","visitdate", dayLabel(v.date)));
+        vinfo.appendChild(el("div","visitcount", v.count+"회"));
+        vinfo.appendChild(el("div","visitcum", "누적 "+cumMap[v.id]+"회"));
+        var del=el("button","rowdel","×"); del.type="button";
+        del.title="이 방문 기록 지우기"; del.setAttribute("aria-label","이 방문 기록 지우기");
+        del.addEventListener("click", function(){
+          var list=(state.prepayVisits[cust.id]||[]).filter(function(x){ return x.id!==v.id; });
+          state.prepayVisits=Object.assign({}, state.prepayVisits);
+          state.prepayVisits[cust.id]=list;
+          savePrepayVisits();
+          render(true);
+        });
+        vinfo.appendChild(del);
+        row.appendChild(vinfo);
+        var img=document.createElement("img");
+        img.src=v.signature; img.className="sigthumb"; img.alt=cust.name+" 서명";
+        row.appendChild(img);
+        vlist.appendChild(row);
+      });
+      var vpad2=el("div","pad");
+      vpad2.appendChild(vlist);
+      vcard.appendChild(vpad2);
+    }
+    app.appendChild(vcard);
+  }
+
+  function renderPrepayAmtTab(app){
+    var form=el("div","addrow");
+    form.appendChild(el("div","addlabel","새 금액 선결제 고객 등록"));
+    var line=el("div","addline wide");
+    var nameI=document.createElement("input"); nameI.type="text"; nameI.className="ti"; nameI.placeholder="이름";
+    var phoneI=document.createElement("input"); phoneI.type="tel"; phoneI.className="ti"; phoneI.placeholder="연락처";
+    var amountI=numberField(null); amountI.placeholder="선결제 금액";
+    line.appendChild(nameI); line.appendChild(phoneI); line.appendChild(amountI);
+    form.appendChild(line);
+    var msg=el("p","status","");
+    var addBtn=el("button","btn","고객 추가"); addBtn.type="button";
+    addBtn.addEventListener("click", function(){
+      var name=nameI.value.trim();
+      if(!name){ msg.textContent="이름을 입력해 주세요."; msg.className="status error"; return; }
+      var row={ id:uid(), name:name, phone:phoneI.value.trim(), amount:parseFloat(amountI.value)||0, createdAt:new Date().toISOString() };
+      state.prepayAmtCustomers=state.prepayAmtCustomers.concat([row]);
+      savePrepayAmtCustomers();
+      msg.textContent="";
+      render(true);
+    });
+    form.appendChild(addBtn);
+    form.appendChild(msg);
+    app.appendChild(form);
+
+    var card=el("div","card");
+    var head=el("div","card-head");
+    head.appendChild(el("div","h","등록된 금액 선결제 고객"));
+    head.appendChild(el("div","m", state.prepayAmtCustomers.length+"명"));
+    card.appendChild(head);
+    if(!state.prepayAmtCustomers.length){
+      var pad=el("div","pad");
+      pad.appendChild(el("div","empty","등록된 선결제 고객이 없습니다."));
+      card.appendChild(pad);
+    }else{
+      var searchWrap=el("div","pad prepaysearch");
+      var searchI=document.createElement("input");
+      searchI.type="search"; searchI.className="ti"; searchI.placeholder="이름으로 검색";
+      searchWrap.appendChild(searchI);
+      card.appendChild(searchWrap);
+
+      var emptySearch=el("div","pad prepaysearchempty");
+      emptySearch.appendChild(el("div","empty","검색 결과가 없습니다."));
+      emptySearch.style.display="none";
+      card.appendChild(emptySearch);
+
+      var list=el("div","roster");
+      var rowRefs=[];
+      state.prepayAmtCustomers.forEach(function(c){
+        var visits=state.prepayAmtVisits[c.id]||[];
+        var used=visits.reduce(function(sum,v){ return sum+(v.amount||0); },0);
+        var item=el("div","item");
+        var link=el("button","rowlink");
+        link.appendChild(el("span","nm", c.name));
+        link.appendChild(el("span","sm", (c.phone? c.phone+" · " : "")+"남은 "+fmtWon(c.amount-used)));
+        link.appendChild(el("span","go","보기 ›"));
+        link.addEventListener("click", function(){ go("prepayamtdetail",{prepayAmtId:c.id}); });
+        item.appendChild(link);
+        list.appendChild(item);
+        rowRefs.push({ el:item, name:c.name });
+      });
+      searchI.addEventListener("input", function(){
+        var q=searchI.value.trim().toLowerCase();
+        var anyShown=false;
+        rowRefs.forEach(function(r){
+          var match=!q || r.name.toLowerCase().indexOf(q)>=0;
+          r.el.style.display=match? "" : "none";
+          if(match) anyShown=true;
+        });
+        emptySearch.style.display=anyShown? "none" : "";
+      });
+      card.appendChild(list);
+    }
+    app.appendChild(card);
+  }
+
+  function viewPrepayAmtDetail(app){
+    var cust=state.prepayAmtCustomers.find(function(c){ return c.id===state.prepayAmtSelId; });
+    if(!cust){ go("prepayamt"); return; }
+    app.appendChild(topBar(cust.name,"prepay"));
+
+    var existingVisits=state.prepayAmtVisits[cust.id]||[];
+    var usedAmt=existingVisits.reduce(function(sum,v){ return sum+(v.amount||0); },0);
+    var remaining=(cust.amount||0)-usedAmt;
+
+    var infoCard=el("div","remaincard");
+    infoCard.appendChild(el("div","remainnum"+(remaining<=0?" low":""), fmtWon(remaining)+" 남음"));
+    var infoStats=el("div","remainstats");
+    var stat=el("div","remainstat");
+    stat.appendChild(el("span","remainstatnum", fmtWon(cust.amount)));
+    stat.appendChild(el("span","remainstatlabel","선결제"));
+    infoStats.appendChild(stat);
+    var stat2=el("div","remainstat");
+    stat2.appendChild(el("span","remainstatnum", fmtWon(usedAmt)));
+    stat2.appendChild(el("span","remainstatlabel","사용"));
+    infoStats.appendChild(stat2);
+    infoCard.appendChild(infoStats);
+    app.appendChild(infoCard);
+
+    if(cust.phone){
+      var infoCard2=el("div","card");
+      var infoPad=el("div","pad");
+      infoPad.appendChild(el("div","empty", cust.phone));
+      infoCard2.appendChild(infoPad);
+      app.appendChild(infoCard2);
+    }
+
+    var form=el("div","addrow");
+    form.appendChild(el("div","addlabel","사용 기록 추가"));
+    var line=el("div","addline");
+    var dateBtn=document.createElement("button");
+    dateBtn.type="button"; dateBtn.className="ti datebtn";
+    var draft={ date: todayStr() };
+    dateBtn.textContent=dayLabel(draft.date);
+    dateBtn.addEventListener("click", function(){
+      openDatePicker(dateBtn, draft.date, function(ds){ draft.date=ds; dateBtn.textContent=dayLabel(ds); });
+    });
+    line.appendChild(dateBtn);
+    line.appendChild(el("span","addsep","사용 금액"));
+    var amtI=numberField(null);
+    line.appendChild(amtI);
+    form.appendChild(line);
+
+    var sig=buildSignaturePad();
+    form.appendChild(sig.el);
+
+    var msg=el("p","status","");
+    var saveBtn=el("button","btn","사용 기록 저장"); saveBtn.type="button";
+    saveBtn.style.marginTop="10px";
+    saveBtn.addEventListener("click", function(){
+      var amt=parseFloat(amtI.value)||0;
+      if(amt<=0){ msg.textContent="사용 금액을 입력해 주세요."; msg.className="status error"; return; }
+      if(sig.isEmpty()){ msg.textContent="서명을 받아 주세요."; msg.className="status error"; return; }
+      var visit={ id:uid(), date:draft.date, amount:amt, signature:sig.toDataURL(), createdAt:new Date().toISOString() };
+      var list=(state.prepayAmtVisits[cust.id]||[]).concat([visit]);
+      state.prepayAmtVisits=Object.assign({}, state.prepayAmtVisits);
+      state.prepayAmtVisits[cust.id]=list;
+      savePrepayAmtVisits();
+      msg.textContent="";
+      render(true);
+    });
+    form.appendChild(saveBtn);
+    form.appendChild(msg);
+    app.appendChild(form);
+
+    var visitsAsc=(state.prepayAmtVisits[cust.id]||[]).slice().sort(function(a,b){
+      return (a.date||"").localeCompare(b.date||"") || (a.createdAt||"").localeCompare(b.createdAt||"");
+    });
+    var cumMap={}, cumSum=0;
+    visitsAsc.forEach(function(v){ cumSum+=(v.amount||0); cumMap[v.id]=cumSum; });
+    var visits=visitsAsc.slice().sort(function(a,b){
+      return (b.date||"").localeCompare(a.date||"") || (b.createdAt||"").localeCompare(a.createdAt||"");
+    });
+    var vcard=el("div","card");
+    var vhead=el("div","card-head");
+    vhead.appendChild(el("div","h","사용 기록"));
+    vhead.appendChild(el("div","m", visits.length+"건"));
+    vcard.appendChild(vhead);
+    if(!visits.length){
+      var vpad=el("div","pad");
+      vpad.appendChild(el("div","empty","사용 기록이 없습니다."));
+      vcard.appendChild(vpad);
+    }else{
+      var vlist=el("div","visitlist");
+      visits.forEach(function(v){
+        var row=el("div","visititem");
+        var vinfo=el("div","visitinfo");
+        vinfo.appendChild(el("div","visitdate", dayLabel(v.date)));
+        vinfo.appendChild(el("div","visitcount", fmtWon(v.amount)));
+        vinfo.appendChild(el("div","visitcum", "누적 "+fmtWon(cumMap[v.id])));
+        var del=el("button","rowdel","×"); del.type="button";
+        del.title="이 사용 기록 지우기"; del.setAttribute("aria-label","이 사용 기록 지우기");
+        del.addEventListener("click", function(){
+          var list=(state.prepayAmtVisits[cust.id]||[]).filter(function(x){ return x.id!==v.id; });
+          state.prepayAmtVisits=Object.assign({}, state.prepayAmtVisits);
+          state.prepayAmtVisits[cust.id]=list;
+          savePrepayAmtVisits();
+          render(true);
+        });
+        vinfo.appendChild(del);
+        row.appendChild(vinfo);
+        var img=document.createElement("img");
+        img.src=v.signature; img.className="sigthumb"; img.alt=cust.name+" 서명";
+        row.appendChild(img);
+        vlist.appendChild(row);
+      });
+      var vpad2=el("div","pad");
+      vpad2.appendChild(vlist);
+      vcard.appendChild(vpad2);
+    }
+    app.appendChild(vcard);
   }
 
   function viewBoard(app){
@@ -3199,6 +3755,10 @@
       coffeeFrontFirst: state.coffeeFrontFirst,
       posts: state.posts,
       checklist: state.checklist,
+      prepayCustomers: state.prepayCustomers,
+      prepayVisits: state.prepayVisits,
+      prepayAmtCustomers: state.prepayAmtCustomers,
+      prepayAmtVisits: state.prepayAmtVisits,
       adminPassword: state.adminPassword,
       removedIds: Array.from(removedIds)
     };
@@ -3212,6 +3772,10 @@
     state.schedule = (payload.schedule && typeof payload.schedule==="object") ? payload.schedule : {};
     state.posts = Array.isArray(payload.posts) ? payload.posts : [];
     state.checklist = (payload.checklist && typeof payload.checklist==="object") ? payload.checklist : {};
+    state.prepayCustomers = Array.isArray(payload.prepayCustomers) ? payload.prepayCustomers : [];
+    state.prepayVisits = (payload.prepayVisits && typeof payload.prepayVisits==="object") ? payload.prepayVisits : {};
+    state.prepayAmtCustomers = Array.isArray(payload.prepayAmtCustomers) ? payload.prepayAmtCustomers : [];
+    state.prepayAmtVisits = (payload.prepayAmtVisits && typeof payload.prepayAmtVisits==="object") ? payload.prepayAmtVisits : {};
     if(typeof payload.coffeeFrontFirst==="boolean") state.coffeeFrontFirst=payload.coffeeFrontFirst;
     if(typeof payload.adminPassword==="string" && payload.adminPassword) state.adminPassword=payload.adminPassword;
     removedIds = new Set(Array.isArray(payload.removedIds)? payload.removedIds : []);
@@ -3223,6 +3787,10 @@
     saveCoffeeSetting();
     savePosts();
     saveChecklist();
+    savePrepayCustomers();
+    savePrepayVisits();
+    savePrepayAmtCustomers();
+    savePrepayAmtVisits();
     var jobs=[];
     Object.keys(state.data).forEach(function(ym){
       Object.keys(state.data[ym]||{}).forEach(function(id){ jobs.push(saveMonth(ym,id)); });
@@ -3353,10 +3921,15 @@
         state.schedule={};
         state.posts=[];
         state.checklist={};
+        state.prepayCustomers=[];
+        state.prepayVisits={};
+        state.prepayAmtCustomers=[];
+        state.prepayAmtVisits={};
         state.coffeeFrontFirst=true;
         state.adminPassword="12345";
         removedIds=new Set();
-        var jobs=[ saveEmployees(), saveAdminPassword(), saveCoffeeSetting(), savePosts(), saveChecklist() ];
+        var jobs=[ saveEmployees(), saveAdminPassword(), saveCoffeeSetting(), savePosts(), saveChecklist(),
+          savePrepayCustomers(), savePrepayVisits(), savePrepayAmtCustomers(), savePrepayAmtVisits() ];
         return Promise.all(jobs);
       }).then(function(){
         msg.textContent="초기화되었습니다. 비밀번호도 12345로 초기화되었습니다.";
@@ -3399,6 +3972,9 @@
     else if(v==="handover") viewHandover(app);
     else if(v==="board") viewBoard(app);
     else if(v==="checklist") viewChecklist(app);
+    else if(v==="prepay") viewPrepay(app);
+    else if(v==="prepaydetail") viewPrepayDetail(app);
+    else if(v==="prepayamtdetail") viewPrepayAmtDetail(app);
     else if(v==="schedule") viewSchedule(app);
     else if(v==="admin") viewAdmin(app);
     var s=el("p","status"); s.id="statusLine";
