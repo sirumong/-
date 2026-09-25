@@ -72,6 +72,10 @@
               .upsert({ key: path, value: obj, updated_at: new Date().toISOString() }, { onConflict: "key" })
               .then(function(res){ if(res.error) throw res.error; });
           },
+          delete: function(){
+            return client.from(TABLE).delete().eq("key", path)
+              .then(function(res){ if(res.error) throw res.error; });
+          },
           onSnapshot: function(cb, errCb){
             get().then(cb).catch(function(e){ if(errCb) errCb(e); });
             var channel = client.channel("doc:"+path)
@@ -738,6 +742,11 @@
   function ymOfDate(s){ return (s||"").slice(0,7); }
   function parseDateStr(ds){ var p=ds.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
   function addDaysStr(ds, n){ var d=parseDateStr(ds); d.setDate(d.getDate()+n); return dateStr(d); }
+  function addMonthsStr(ds, n){ var d=parseDateStr(ds); d.setMonth(d.getMonth()+n); return dateStr(d); }
+  function daysBetweenStr(a, b){
+    var da=parseDateStr(a), db=parseDateStr(b);
+    return Math.round((db-da)/86400000);
+  }
   function sundayOfStr(ds){ var d=parseDateStr(ds); d.setDate(d.getDate()-d.getDay()); return dateStr(d); }
   function uid(){ return "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   // db 스냅샷에서 온 데이터는 frozen 이라 그대로 들고 있다가 나중에 e.active=false 처럼
@@ -914,11 +923,17 @@
     var all=readLocal(); all.prepayCustomers=state.prepayCustomers; writeLocal(all);
     return Promise.resolve();
   }
-  function savePrepayVisits(){
-    if(db) return queued("prepayVisits", function(){
-      return db.doc("config/prepayVisits").set({ byCustomer: state.prepayVisits });
+  function savePrepayVisitsFor(custId){
+    if(db) return queued("prepayVisits:"+custId, function(){
+      return db.doc("prepayVisits/"+custId).set({ list: state.prepayVisits[custId]||[] });
     });
     var all=readLocal(); all.prepayVisits=state.prepayVisits; writeLocal(all);
+    return Promise.resolve();
+  }
+  function deletePrepayVisitsFor(custId){
+    if(db) return queued("prepayVisits:"+custId, function(){
+      return db.doc("prepayVisits/"+custId).delete();
+    });
     return Promise.resolve();
   }
   function savePrepayAmtCustomers(){
@@ -928,12 +943,56 @@
     var all=readLocal(); all.prepayAmtCustomers=state.prepayAmtCustomers; writeLocal(all);
     return Promise.resolve();
   }
-  function savePrepayAmtVisits(){
-    if(db) return queued("prepayAmtVisits", function(){
-      return db.doc("config/prepayAmtVisits").set({ byCustomer: state.prepayAmtVisits });
+  function savePrepayAmtVisitsFor(custId){
+    if(db) return queued("prepayAmtVisits:"+custId, function(){
+      return db.doc("prepayAmtVisits/"+custId).set({ list: state.prepayAmtVisits[custId]||[] });
     });
     var all=readLocal(); all.prepayAmtVisits=state.prepayAmtVisits; writeLocal(all);
     return Promise.resolve();
+  }
+  function deletePrepayAmtVisitsFor(custId){
+    if(db) return queued("prepayAmtVisits:"+custId, function(){
+      return db.doc("prepayAmtVisits/"+custId).delete();
+    });
+    return Promise.resolve();
+  }
+  var prepayVisitSubs={};
+  function syncPrepayVisitSubs(customerIds){
+    if(!db) return;
+    var needSet={};
+    customerIds.forEach(function(id){ needSet[id]=true; });
+    Object.keys(prepayVisitSubs).forEach(function(id){
+      if(!needSet[id]){ try{prepayVisitSubs[id]();}catch(e){} delete prepayVisitSubs[id]; }
+    });
+    customerIds.forEach(function(id){
+      if(prepayVisitSubs[id]) return;
+      prepayVisitSubs[id]=db.doc("prepayVisits/"+id).onSnapshot(function(s){
+        var list=cloneList((s.exists && s.data().list)||[]);
+        if(JSON.stringify(list)===JSON.stringify(state.prepayVisits[id]||[])) return;
+        state.prepayVisits=Object.assign({}, state.prepayVisits);
+        state.prepayVisits[id]=list;
+        render();
+      }, dbErr);
+    });
+  }
+  var prepayAmtVisitSubs={};
+  function syncPrepayAmtVisitSubs(customerIds){
+    if(!db) return;
+    var needSet={};
+    customerIds.forEach(function(id){ needSet[id]=true; });
+    Object.keys(prepayAmtVisitSubs).forEach(function(id){
+      if(!needSet[id]){ try{prepayAmtVisitSubs[id]();}catch(e){} delete prepayAmtVisitSubs[id]; }
+    });
+    customerIds.forEach(function(id){
+      if(prepayAmtVisitSubs[id]) return;
+      prepayAmtVisitSubs[id]=db.doc("prepayAmtVisits/"+id).onSnapshot(function(s){
+        var list=cloneList((s.exists && s.data().list)||[]);
+        if(JSON.stringify(list)===JSON.stringify(state.prepayAmtVisits[id]||[])) return;
+        state.prepayAmtVisits=Object.assign({}, state.prepayAmtVisits);
+        state.prepayAmtVisits[id]=list;
+        render();
+      }, dbErr);
+    });
   }
   function saveMonth(ym, empId){
     var rows=rowsOf(ym,empId);
@@ -1047,27 +1106,19 @@
     }, dbErr));
     subs.push(db.doc("config/prepayCustomers").onSnapshot(function(s){
       var list=cloneList((s.exists && s.data().list)||[]);
-      if(JSON.stringify(list)===JSON.stringify(state.prepayCustomers)) return;
-      state.prepayCustomers=list;
-      render();
-    }, dbErr));
-    subs.push(db.doc("config/prepayVisits").onSnapshot(function(s){
-      var obj=Object.assign({}, (s.exists && s.data().byCustomer)||{});
-      if(JSON.stringify(obj)===JSON.stringify(state.prepayVisits)) return;
-      state.prepayVisits=obj;
-      render();
+      if(JSON.stringify(list)!==JSON.stringify(state.prepayCustomers)){
+        state.prepayCustomers=list;
+        render();
+      }
+      syncPrepayVisitSubs(list.map(function(c){ return c.id; }));
     }, dbErr));
     subs.push(db.doc("config/prepayAmtCustomers").onSnapshot(function(s){
       var list=cloneList((s.exists && s.data().list)||[]);
-      if(JSON.stringify(list)===JSON.stringify(state.prepayAmtCustomers)) return;
-      state.prepayAmtCustomers=list;
-      render();
-    }, dbErr));
-    subs.push(db.doc("config/prepayAmtVisits").onSnapshot(function(s){
-      var obj=Object.assign({}, (s.exists && s.data().byCustomer)||{});
-      if(JSON.stringify(obj)===JSON.stringify(state.prepayAmtVisits)) return;
-      state.prepayAmtVisits=obj;
-      render();
+      if(JSON.stringify(list)!==JSON.stringify(state.prepayAmtCustomers)){
+        state.prepayAmtCustomers=list;
+        render();
+      }
+      syncPrepayAmtVisitSubs(list.map(function(c){ return c.id; }));
     }, dbErr));
     subs.push(db.collection("shifts").where("ym","==",ym).onSnapshot(function(q){
       var m={};
@@ -1753,12 +1804,38 @@
     var totalCountI=numberField(null); totalCountI.placeholder="구매 횟수";
     line.appendChild(nameI); line.appendChild(phoneI); line.appendChild(amountI); line.appendChild(totalCountI);
     form.appendChild(line);
+
+    var line2=el("div","addline");
+    var regDraft={ date: todayStr() };
+    var regDateBtn=document.createElement("button");
+    regDateBtn.type="button"; regDateBtn.className="ti datebtn";
+    regDateBtn.textContent="등록일 "+dayLabel(regDraft.date);
+    regDateBtn.addEventListener("click", function(){
+      openDatePicker(regDateBtn, regDraft.date, function(ds){ regDraft.date=ds; regDateBtn.textContent="등록일 "+dayLabel(ds); });
+    });
+    line2.appendChild(regDateBtn);
+    line2.appendChild(el("span","addsep","기간"));
+    var monthsSel=document.createElement("select");
+    monthsSel.className="ti";
+    [[1,"1개월"],[3,"3개월"]].forEach(function(o){
+      var opt=document.createElement("option");
+      opt.value=o[0]; opt.textContent=o[1];
+      monthsSel.appendChild(opt);
+    });
+    line2.appendChild(monthsSel);
+    form.appendChild(line2);
+
     var msg=el("p","status","");
     var addBtn=el("button","btn","고객 추가"); addBtn.type="button";
     addBtn.addEventListener("click", function(){
       var name=nameI.value.trim();
       if(!name){ msg.textContent="이름을 입력해 주세요."; msg.className="status error"; return; }
-      var row={ id:uid(), name:name, phone:phoneI.value.trim(), amount:parseFloat(amountI.value)||0, totalCount:parseFloat(totalCountI.value)||0, createdAt:new Date().toISOString() };
+      var row={
+        id:uid(), name:name, phone:phoneI.value.trim(),
+        amount:parseFloat(amountI.value)||0, totalCount:parseFloat(totalCountI.value)||0,
+        regDate:regDraft.date, months:parseInt(monthsSel.value,10)||1,
+        createdAt:new Date().toISOString()
+      };
       state.prepayCustomers=state.prepayCustomers.concat([row]);
       savePrepayCustomers();
       msg.textContent="";
@@ -1791,12 +1868,21 @@
 
       var list=el("div","roster");
       var rowRefs=[];
+      var todayDs=todayStr();
       state.prepayCustomers.forEach(function(c){
         var visits=state.prepayVisits[c.id]||[];
+        var used=visits.reduce(function(sum,v){ return sum+(v.count||0); },0);
+        var remaining=(c.totalCount||0)-used;
+        var infoTxt=(c.phone? c.phone+" · " : "")+"남은 "+remaining+"회";
+        if(c.regDate){
+          var expireDate=addMonthsStr(c.regDate, c.months||1);
+          var daysLeft=daysBetweenStr(todayDs, expireDate);
+          infoTxt+=" · "+dayLabel(expireDate)+" 종료 · "+(daysLeft>=0? "D-"+daysLeft : "기간 만료");
+        }
         var item=el("div","item");
         var link=el("button","rowlink");
         link.appendChild(el("span","nm", c.name));
-        link.appendChild(el("span","sm", (c.phone? c.phone+" · " : "")+fmtWon(c.amount)+" · 방문 "+visits.length+"회"));
+        link.appendChild(el("span","sm", infoTxt));
         link.appendChild(el("span","go","보기 ›"));
         link.addEventListener("click", function(){ go("prepaydetail",{prepayId:c.id}); });
         item.appendChild(link);
@@ -1851,6 +1937,28 @@
       var eTotal=numberField(cust.totalCount); eTotal.placeholder="구매 횟수";
       eLine.appendChild(eName); eLine.appendChild(ePhone); eLine.appendChild(eAmount); eLine.appendChild(eTotal);
       infoPad.appendChild(eLine);
+
+      var eLine2=el("div","addline");
+      var eRegDraft={ date: cust.regDate||todayStr() };
+      var eRegBtn=document.createElement("button");
+      eRegBtn.type="button"; eRegBtn.className="ti datebtn";
+      eRegBtn.textContent="등록일 "+dayLabel(eRegDraft.date);
+      eRegBtn.addEventListener("click", function(){
+        openDatePicker(eRegBtn, eRegDraft.date, function(ds){ eRegDraft.date=ds; eRegBtn.textContent="등록일 "+dayLabel(ds); });
+      });
+      eLine2.appendChild(eRegBtn);
+      eLine2.appendChild(el("span","addsep","기간"));
+      var eMonthsSel=document.createElement("select");
+      eMonthsSel.className="ti";
+      [[1,"1개월"],[3,"3개월"]].forEach(function(o){
+        var opt=document.createElement("option");
+        opt.value=o[0]; opt.textContent=o[1];
+        if((cust.months||1)===o[0]) opt.selected=true;
+        eMonthsSel.appendChild(opt);
+      });
+      eLine2.appendChild(eMonthsSel);
+      infoPad.appendChild(eLine2);
+
       var eMsg=el("p","status","");
       var eSave=el("button","btn","저장"); eSave.type="button";
       eSave.addEventListener("click", function(){
@@ -1858,7 +1966,8 @@
         if(!name){ eMsg.textContent="이름을 입력해 주세요."; eMsg.className="status error"; return; }
         var updated=Object.assign({}, cust, {
           name:name, phone:ePhone.value.trim(),
-          amount:parseFloat(eAmount.value)||0, totalCount:parseFloat(eTotal.value)||0
+          amount:parseFloat(eAmount.value)||0, totalCount:parseFloat(eTotal.value)||0,
+          regDate:eRegDraft.date, months:parseInt(eMonthsSel.value,10)||1
         });
         state.prepayCustomers=state.prepayCustomers.map(function(x){ return x.id===cust.id? updated : x; });
         savePrepayCustomers();
@@ -1890,7 +1999,7 @@
         delete visitsMap[cust.id];
         state.prepayVisits=visitsMap;
         savePrepayCustomers();
-        savePrepayVisits();
+        deletePrepayVisitsFor(cust.id);
         go("prepay");
       });
       actions.appendChild(delBtn);
@@ -1927,7 +2036,7 @@
       var list=(state.prepayVisits[cust.id]||[]).concat([visit]);
       state.prepayVisits=Object.assign({}, state.prepayVisits);
       state.prepayVisits[cust.id]=list;
-      savePrepayVisits();
+      savePrepayVisitsFor(cust.id);
       msg.textContent="";
       render(true);
     });
@@ -1966,7 +2075,7 @@
           var list=(state.prepayVisits[cust.id]||[]).filter(function(x){ return x.id!==v.id; });
           state.prepayVisits=Object.assign({}, state.prepayVisits);
           state.prepayVisits[cust.id]=list;
-          savePrepayVisits();
+          savePrepayVisitsFor(cust.id);
           render(true);
         });
         vinfo.appendChild(del);
@@ -2128,7 +2237,7 @@
         delete visitsMap[cust.id];
         state.prepayAmtVisits=visitsMap;
         savePrepayAmtCustomers();
-        savePrepayAmtVisits();
+        deletePrepayAmtVisitsFor(cust.id);
         go("prepay");
       });
       actions.appendChild(delBtn);
@@ -2167,7 +2276,7 @@
       var list=(state.prepayAmtVisits[cust.id]||[]).concat([visit]);
       state.prepayAmtVisits=Object.assign({}, state.prepayAmtVisits);
       state.prepayAmtVisits[cust.id]=list;
-      savePrepayAmtVisits();
+      savePrepayAmtVisitsFor(cust.id);
       msg.textContent="";
       render(true);
     });
@@ -2206,7 +2315,7 @@
           var list=(state.prepayAmtVisits[cust.id]||[]).filter(function(x){ return x.id!==v.id; });
           state.prepayAmtVisits=Object.assign({}, state.prepayAmtVisits);
           state.prepayAmtVisits[cust.id]=list;
-          savePrepayAmtVisits();
+          savePrepayAmtVisitsFor(cust.id);
           render(true);
         });
         vinfo.appendChild(del);
@@ -3892,9 +4001,9 @@
     savePosts();
     saveChecklist();
     savePrepayCustomers();
-    savePrepayVisits();
+    Object.keys(state.prepayVisits).forEach(function(custId){ savePrepayVisitsFor(custId); });
     savePrepayAmtCustomers();
-    savePrepayAmtVisits();
+    Object.keys(state.prepayAmtVisits).forEach(function(custId){ savePrepayAmtVisitsFor(custId); });
     var jobs=[];
     Object.keys(state.data).forEach(function(ym){
       Object.keys(state.data[ym]||{}).forEach(function(id){ jobs.push(saveMonth(ym,id)); });
@@ -4033,7 +4142,7 @@
         state.adminPassword="12345";
         removedIds=new Set();
         var jobs=[ saveEmployees(), saveAdminPassword(), saveCoffeeSetting(), savePosts(), saveChecklist(),
-          savePrepayCustomers(), savePrepayVisits(), savePrepayAmtCustomers(), savePrepayAmtVisits() ];
+          savePrepayCustomers(), savePrepayAmtCustomers() ];
         return Promise.all(jobs);
       }).then(function(){
         msg.textContent="초기화되었습니다. 비밀번호도 12345로 초기화되었습니다.";
