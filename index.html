@@ -555,6 +555,36 @@
   }
   .checkbtn.on{background:var(--accent);color:var(--accent-ink);box-shadow:none}
   .checkbtn-wide{padding:0 16px}
+  .datebar{display:flex;align-items:center;gap:8px;margin:4px 0 12px}
+  .datebar .calnavbtn{flex:none}
+  .datebar .dlabel{flex:1;text-align:center;font:inherit;font-size:16px;font-weight:700;color:var(--ink);background:var(--surface);border:none;box-shadow:var(--shadow);border-radius:10px;padding:10px 8px;cursor:pointer}
+  .wlchip{display:block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 4px;margin-top:3px;white-space:nowrap;text-align:center}
+  .wl-am{background:rgba(77,184,72,.16);color:var(--accent-text)}
+  .wl-pm{background:rgba(246,139,30,.16);color:#B8620A}
+  .wlsec{margin-top:14px}
+  .wlsec:first-child{margin-top:0}
+  .wlsechead{font-size:14px;font-weight:700;margin-bottom:8px}
+  .wlrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rule);font-size:15px}
+  .wlrow:first-of-type{border-top:none}
+  .wlby{margin-left:auto;font-weight:700;color:var(--accent-text);white-space:nowrap}
+  .wlempty{color:var(--muted);font-size:14px;padding:6px 0}
+  .todoitem{background:var(--surface);box-shadow:var(--shadow);border-radius:14px;padding:14px;margin-bottom:12px}
+  .todoitem.done{background:rgba(77,184,72,.12)}
+  .todoitem.pinned{box-shadow:inset 0 0 0 2px var(--feature),var(--shadow)}
+  .todohead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .todotext{font-size:17px;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+  .todowho{margin-bottom:0}
+  .todo-del{font:inherit;font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 8px;white-space:nowrap}
+  .todoitem{position:relative}
+  .todoitem.flash-up{animation:todoflashup .9s ease-out}
+  .todoitem.flash-down{animation:todoflashdown .9s ease-out}
+  @keyframes todoflashup{0%{box-shadow:0 0 0 6px rgba(246,139,30,.35),var(--shadow-lg)}100%{box-shadow:inset 0 0 0 2px var(--feature),var(--shadow)}}
+  @keyframes todoflashdown{0%{box-shadow:0 0 0 6px rgba(124,136,120,.30),var(--shadow-lg)}100%{box-shadow:var(--shadow)}}
+  .todotools{display:flex;align-items:center;gap:2px;flex:none}
+  .todo-pin{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:none;border:none;border-radius:8px;color:var(--muted);cursor:pointer;opacity:.55}
+  .todo-pin.on{color:var(--accent-text);opacity:1}
+  .todo-pin.on svg{fill:currentColor}
+  .todo-del.armed{color:var(--danger);font-weight:700}
 
   .sigpad{margin:14px 0 4px;max-width:760px}
   .sigcanvaswrap{position:relative}
@@ -643,6 +673,41 @@
     .addline.wide{flex-wrap:wrap}
     .addline.wide input.ti,.addline.wide .datebtn{flex:none;min-width:120px}
   }
+
+  /* ===== 움직임(애니메이션) ===== */
+  @keyframes enterUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes enterPop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes enterSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+  .wrap.enter > *{animation:enterUp .26s cubic-bezier(.22,.8,.3,1) backwards}
+  .wrap.enter > *:nth-child(2){animation-delay:.02s}
+  .wrap.enter > *:nth-child(3){animation-delay:.04s}
+  .wrap.enter > *:nth-child(4){animation-delay:.06s}
+  .wrap.enter > *:nth-child(5){animation-delay:.08s}
+  .wrap.enter > *:nth-child(n+6){animation-delay:.1s}
+  .wrap.enter .featuredcard,.wrap.enter .gridtile{
+    animation:enterPop .3s cubic-bezier(.22,.8,.3,1) backwards;animation-delay:calc(var(--i,0)*28ms)
+  }
+  .wrap.enter .noticestriprow{animation:enterSlide .28s cubic-bezier(.22,.8,.3,1) .04s backwards}
+  .wrap.enter .todoitem,.wrap.enter .wlrow{animation:enterUp .26s cubic-bezier(.22,.8,.3,1) backwards}
+  .wrap.enter .todoitem:nth-child(2){animation-delay:.02s}
+  .wrap.enter .todoitem:nth-child(3){animation-delay:.04s}
+  .wrap.enter .todoitem:nth-child(4){animation-delay:.06s}
+  .wrap.enter .todoitem:nth-child(n+5){animation-delay:.08s}
+
+  .gridtile,.featuredcard,.btn,.checkbtn,.schedtab,.back,.calnavbtn,.noticestriprow,.cell{
+    transition:transform .16s ease,box-shadow .2s ease,background-color .2s ease,color .2s ease;
+  }
+  @media (hover:hover){
+    .gridtile:hover,.featuredcard:hover{transform:translateY(-3px)}
+    .featuredcard.f-green:hover{box-shadow:0 8px 20px rgba(77,184,72,.36)}
+    .featuredcard.f-orange:hover{box-shadow:0 8px 20px rgba(246,139,30,.36)}
+  }
+  .gridtile:active,.featuredcard:active{transform:scale(.96)}
+  .btn:active,.checkbtn:active,.schedtab:active,.back:active,.calnavbtn:active{transform:scale(.94)}
+  .cell:active{transform:scale(.96)}
+  .gridtile:hover .gridicon{transform:scale(1.12)}
+  .gridicon,.featuredicon{transition:transform .25s cubic-bezier(.3,1.5,.5,1)}
+  .featuredcard:hover .featuredicon{transform:scale(1.1) rotate(-4deg)}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -682,6 +747,11 @@
     salesSelDate: null, // 관리자 > 매장 매출에서 고른 날짜
     handoverEditId: null, // 인수인계 기록 중 수정 중인 것
     checklist: {},         // 체크리스트 항목별 체크 여부
+    checkTab: "am",        // 체크리스트 탭: am(오전) | pm(오후)
+    checkDate: todayStr(), // 체크리스트에서 보고 있는 날짜
+    workLog: {},           // workLog[ym][date] = { am:{todoId:{text,by}}, pm:{key:true} }
+    logSelDate: null,      // 업무 기록 달력에서 고른 날짜
+    morningTodos: [],      // 오전 할 일 [{id,text,doneBy}]
     prepayCustomers: [],   // 횟수 선결제 고객 목록
     prepayVisits: {},      // 고객id별 방문 기록(서명 포함)
     prepaySelId: null,     // 선택된 횟수 선결제 고객
@@ -725,6 +795,7 @@
     person:   { title:"개인 근무 확인" },
     add:      { title:"근무자 추가" },
     handover: { title:"일일 인수인계" },
+    worklog:  { title:"업무 기록" },
     board:    { title:"게시판" },
     checklist:{ title:"체크리스트" },
     prepay:{ title:"선결제" },
@@ -875,6 +946,8 @@
     state.adminPassword=all.adminPassword||"12345";
     state.posts=all.posts||[];
     state.checklist=all.checklist||{};
+    state.morningTodos=all.morningTodos||[];
+    state.workLog=all.workLog||{};
     state.prepayCustomers=all.prepayCustomers||[];
     state.prepayVisits=all.prepayVisits||{};
     state.prepayAmtCustomers=all.prepayAmtCustomers||[];
@@ -914,6 +987,57 @@
       return db.doc("config/checklist").set({ items: state.checklist });
     });
     var all=readLocal(); all.checklist=state.checklist; writeLocal(all);
+    return Promise.resolve();
+  }
+  function saveWorkLog(ym){
+    var days=state.workLog[ym]||{};
+    if(db) return queued("worklog:"+ym, function(){
+      return db.doc("worklog/"+ym).set({ ym:ym, days:days });
+    });
+    var all=readLocal(); all.workLog=all.workLog||{}; all.workLog[ym]=days; writeLocal(all);
+    return Promise.resolve();
+  }
+  function dayOf(ds){
+    var m=state.workLog[ds.slice(0,7)];
+    var d=(m && m[ds]) || {};
+    return { am:d.am||{}, pm:d.pm||{} };
+  }
+  function recBys(rec){
+    if(!rec) return [];
+    if(Array.isArray(rec.bys)) return rec.bys;
+    return rec.by ? [rec.by] : [];
+  }
+  function editDay(ds, fn){
+    var ym=ds.slice(0,7);
+    var m=state.workLog[ym]=state.workLog[ym]||{};
+    var d=m[ds]=m[ds]||{};
+    d.am=d.am||{}; d.pm=d.pm||{};
+    fn(d);
+    if(!Object.keys(d.am).length && !Object.keys(d.pm).length) delete m[ds];
+    saveWorkLog(ym);
+  }
+  var workLogSubs={};
+  function subscribeWorkLog(yms){
+    if(!db) return;
+    var need={}; yms.forEach(function(y){ need[y]=true; });
+    Object.keys(workLogSubs).forEach(function(y){
+      if(!need[y]){ try{workLogSubs[y]();}catch(e){} delete workLogSubs[y]; }
+    });
+    yms.forEach(function(y){
+      if(workLogSubs[y]) return;
+      workLogSubs[y]=db.doc("worklog/"+y).onSnapshot(function(s){
+        var days=(s.exists && s.data().days) || {};
+        if(JSON.stringify(days)===JSON.stringify(state.workLog[y]||{})) return;
+        state.workLog[y]=JSON.parse(JSON.stringify(days));
+        render();
+      }, dbErr);
+    });
+  }
+  function saveMorningTodos(){
+    if(db) return queued("morningTodos", function(){
+      return db.doc("config/morningTodos").set({ list: state.morningTodos });
+    });
+    var all=readLocal(); all.morningTodos=state.morningTodos; writeLocal(all);
     return Promise.resolve();
   }
   function savePrepayCustomers(){
@@ -1104,6 +1228,12 @@
       state.checklist=obj;
       render();
     }, dbErr));
+    subs.push(db.doc("config/morningTodos").onSnapshot(function(s){
+      var list=cloneList((s.exists && s.data().list)||[]);
+      if(JSON.stringify(list)===JSON.stringify(state.morningTodos)) return;
+      state.morningTodos=list;
+      render();
+    }, dbErr));
     subs.push(db.doc("config/prepayCustomers").onSnapshot(function(s){
       var list=cloneList((s.exists && s.data().list)||[]);
       if(JSON.stringify(list)!==JSON.stringify(state.prepayCustomers)){
@@ -1286,6 +1416,8 @@
     if(view==="schedule"){ state.schedSelDate=null; state.schedSummaryEmp=null; }
     if(view==="admin"){ state.adminUnlocked=false; state.adminSection=null; }
     if(view==="handover") state.handoverEditId=null;
+    if(view==="checklist") state.checkDate=opts.date||todayStr();
+    if(view==="worklog") state.logSelDate=null;
     if(view==="board"){
       state.boardSelId=(opts.postId!==undefined)? opts.postId : null;
       state.boardWriting=false;
@@ -1296,13 +1428,17 @@
       state.boardPage=1;
     }
     subscribe(state.ym);
+    if(view==="checklist") subscribeWorkLog([state.checkDate.slice(0,7)]);
+    if(view==="worklog") subscribeWorkLog([state.ym]);
     if(view==="schedule"){ subscribeWeek(state.schedWeek); subscribeCalMonth(state.schedCalYm); }
     window.scrollTo(0,0);
+    animateNext=true;
     render(true);
   }
   function setYm(ym){
-    state.ym=ym; state.selDate=null;
+    state.ym=ym; state.selDate=null; state.logSelDate=null;
     subscribe(ym);
+    if(state.view==="worklog") subscribeWorkLog([ym]);
     render(true);
   }
   function setWeek(weekStart){
@@ -1589,6 +1725,8 @@
     download:'<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><path d="M12 3v13"></path><path d="M7 11l5 5 5-5"></path>',
     refresh:'<path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path>',
     checklist:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 12l3 3 6-6"></path>',
+    log:'<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"></path><path d="M9 8h7M9 12h7M9 16h4"></path>',
+    pin:'<path d="M9 4h6l-1 6 3 3H7l3-3z"></path><path d="M12 13v7"></path>',
     pen:'<path d="M4 20h4l10-10-4-4-10 10z"></path><path d="M14 6l4 4"></path>'
   };
   function iconSvg(name, size){
@@ -1630,6 +1768,7 @@
       ["clock","출퇴근 기록","출근·퇴근 시간을 적습니다","clock","f-orange"]
     ].forEach(function(t){
       var card=el("button","featuredcard "+t[4]);
+      card.style.setProperty("--i", featuredWrap.children.length+1);
       var ic=el("div","featuredicon"); ic.innerHTML=iconSvg(t[3],32);
       card.appendChild(ic);
       card.appendChild(el("span","featuredtitle",t[1]));
@@ -1648,10 +1787,12 @@
       ["add","근무자 추가","userplus"],
       ["board","게시판","flag"],
       ["checklist","체크리스트","checklist"],
+      ["worklog","업무 기록","log"],
       ["prepay","선결제","pen"],
       ["admin","관리자","gear"]
     ].forEach(function(t){
       var card=el("button","gridtile");
+      card.style.setProperty("--i", grid.children.length+3);
       var ic=el("div","gridicon"); ic.innerHTML=iconSvg(t[2],28);
       card.appendChild(ic);
       card.appendChild(el("span","gridtitle",t[1]));
@@ -1667,23 +1808,243 @@
     state.posts.forEach(function(p){ if(p.id===id) found=p; });
     return found;
   }
+  var PM_ITEMS=[["coffeeFront","커피 앞 마감"],["coffeeBack","커피 뒤 마감"],["kitchen","주방 마감"],["recycle","분리수거"]];
   function viewChecklist(app){
     app.appendChild(topBar("체크리스트","home"));
 
+    // 날짜 이동
+    var ds=state.checkDate;
+    function setCheckDate(n){
+      state.checkDate=n; subscribeWorkLog([n.slice(0,7)]); animateNext=true; render(true);
+    }
+    var bar=el("div","datebar");
+    var prev=el("button","calnavbtn","‹"); prev.type="button"; prev.setAttribute("aria-label","전날");
+    var next=el("button","calnavbtn","›"); next.type="button"; next.setAttribute("aria-label","다음날");
+    prev.addEventListener("click", function(){ setCheckDate(addDaysStr(ds,-1)); });
+    next.addEventListener("click", function(){ setCheckDate(addDaysStr(ds,1)); });
+    var lab=el("button","dlabel", dayLabel(ds)+(ds===todayStr()?" · 오늘":"")); lab.type="button";
+    lab.addEventListener("click", function(){
+      openDatePicker(lab, ds, function(n){ setCheckDate(n); });
+    });
+    bar.appendChild(prev); bar.appendChild(lab); bar.appendChild(next);
+    if(ds!==todayStr()){
+      var tb=el("button","schedtab","오늘"); tb.type="button";
+      tb.addEventListener("click", function(){ setCheckDate(todayStr()); });
+      bar.appendChild(tb);
+    }
+    app.appendChild(bar);
+
+    var tabs=el("div","schedtabs");
+    [["am","업무"],["pm","마감"]].forEach(function(t){
+      var b=el("button","schedtab"+(state.checkTab===t[0]?" on":""), t[1]);
+      b.type="button";
+      b.addEventListener("click", function(){
+        if(state.checkTab===t[0]) return;
+        state.checkTab=t[0]; animateNext=true; render(true);
+      });
+      tabs.appendChild(b);
+    });
+    app.appendChild(tabs);
+    if(state.checkTab==="am") viewChecklistAM(app, ds); else viewChecklistPM(app, ds);
+  }
+  // 고정(pinned)된 목록만 날짜를 이어서 보이고, 고정하지 않은 목록은 만든 날에만 보인다.
+  // 예전에 만든 목록(pinned 값이 없는 것)은 고정된 것으로 취급한다.
+  function todoPinned(t){ return t.pinned!==false; }
+  function todoVisibleOn(t, ds){
+    if(!todoPinned(t)) return ds===t.from;
+    return (!t.from || ds>=t.from) && (!t.until || ds<t.until);
+  }
+  function togglePin(todo, ds){
+    if(!todoPinned(todo)){
+      todo.pinned=true;                       // 만든 날부터 계속 이어짐
+      return;
+    }
+    // 고정 해제: 이 날짜부터는 고정 목록에서 빠지고, 이 날 하루만 남는 목록으로 바꾼다
+    var nid=uid();
+    var ym=ds.slice(0,7);
+    var m=state.workLog[ym]||{};
+    var rec=m[ds] && m[ds].am && m[ds].am[todo.id];
+    var changedMonths={};
+    if(rec){
+      editDay(ds, function(d){ d.am[nid]=rec; delete d.am[todo.id]; });
+    }
+    // 이 날짜 이후 날짜에 남은 기록은 정리
+    Object.keys(state.workLog).forEach(function(y){
+      var mm=state.workLog[y], ch=false;
+      Object.keys(mm).forEach(function(d2){
+        if(d2>ds && mm[d2].am && mm[d2].am[todo.id]){
+          delete mm[d2].am[todo.id]; ch=true;
+          if(!Object.keys(mm[d2].am).length && !Object.keys(mm[d2].pm||{}).length) delete mm[d2];
+        }
+      });
+      if(ch) saveWorkLog(y);
+    });
+    if(todo.from && todo.from>=ds){
+      todo.pinned=false; todo.from=ds;         // 처음 만든 날이면 그냥 고정만 풀면 된다
+      if(rec){ // 기록 id를 되돌린다
+        editDay(ds, function(d){ d.am[todo.id]=d.am[nid]; delete d.am[nid]; });
+      }
+    }else{
+      todo.until=ds;
+      state.morningTodos.push({ id:nid, text:todo.text, from:ds, pinned:false });
+    }
+  }
+  function viewChecklistAM(app, ds){
     var card=el("div","card");
     var pad=el("div","pad");
+    pad.appendChild(el("div","addlabel","체크 목록"));
+    var canEditList = true;
+    var list=state.morningTodos.filter(function(t){ return todoVisibleOn(t, ds); });
+    // 고정된 목록을 위로 (같은 그룹 안에서는 기존 순서 유지)
+    list=list.filter(todoPinned).concat(list.filter(function(t){ return !todoPinned(t); }));
+
+    var addRow=el("div","addline");
+    var inp=document.createElement("input"); inp.type="text"; inp.className="ti"; inp.placeholder="할 일 입력";
+    inp.style.flex="1"; inp.style.minWidth="0";
+    var addBtn=el("button","btn","추가"); addBtn.type="button";
+    function addTodo(){
+      var t=inp.value.trim();
+      if(!t) return;
+      state.morningTodos.push({ id:uid(), text:t, from:ds, pinned:false });
+      saveMorningTodos();
+      render(true);
+    }
+    addBtn.addEventListener("click", addTodo);
+    inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); addTodo(); } });
+    addRow.appendChild(inp); addRow.appendChild(addBtn);
+    if(canEditList) pad.appendChild(addRow);
+    else pad.appendChild(el("p","status","지난 날짜의 목록은 수정할 수 없습니다. 목록 추가·삭제는 오늘부터 적용됩니다."));
+
+    var emps=activeEmployees();
+    var day=dayOf(ds);
+    if(!list.length){
+      pad.appendChild(el("p","status", canEditList ? "등록된 할 일이 없습니다. 위에서 추가해 주세요." : "이 날은 등록된 목록이 없습니다."));
+    }
+    list.forEach(function(todo){
+      var rec=day.am[todo.id];
+      var bys=recBys(rec);
+      var item=el("div","todoitem"+(bys.length?" done":"")+(todoPinned(todo)?" pinned":""));
+      item.dataset.id=todo.id;
+      var head=el("div","todohead");
+      head.appendChild(el("div","todotext", todo.text));
+      var pin=el("button","todo-pin"+(todoPinned(todo)?" on":""),""); pin.type="button";
+      pin.innerHTML=iconSvg("pin",18);
+      pin.setAttribute("aria-label", todoPinned(todo)?"고정 해제":"고정");
+      pin.title = todoPinned(todo)?"고정됨 (눌러서 해제)":"고정 (다음 날에도 이어짐)";
+      pin.addEventListener("click", function(){
+        // FLIP: 바뀌기 전 위치를 기억했다가, 다시 그린 뒤 이전 위치에서 새 위치로 부드럽게 이동시킨다
+        var before={};
+        document.querySelectorAll(".todoitem").forEach(function(n){ before[n.dataset.id]=n.getBoundingClientRect().top; });
+        var clickedId=todo.id, wasPinned=todoPinned(todo);
+        togglePin(todo, ds);
+        saveMorningTodos();
+        render(true);
+        var reduce=window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if(reduce) return;
+        document.querySelectorAll(".todoitem").forEach(function(n){
+          var id=n.dataset.id;
+          var old=before[id];
+          var isClicked=(id===clickedId);
+          if(old===undefined){ old=before[clickedId]; isClicked=true; }   // 고정 해제로 새 id가 된 항목
+          if(old===undefined) return;
+          var dy=old-n.getBoundingClientRect().top;
+          if(isClicked) n.classList.add(wasPinned?"flash-down":"flash-up");
+          if(!dy) return;
+          n.style.transition="none";
+          n.style.transform="translateY("+dy+"px)";
+          if(isClicked) n.style.zIndex="2";
+          n.getBoundingClientRect();   // 강제 리플로우
+          n.style.transition="transform .45s cubic-bezier(.22,.8,.3,1)";
+          n.style.transform="";
+          setTimeout(function(){ n.style.transition=""; n.style.zIndex=""; }, 500);
+        });
+      });
+      var del=el("button","todo-del","삭제"); del.type="button";
+      var armed=false;
+      del.addEventListener("click", function(){
+        if(!armed){
+          armed=true; del.textContent="한 번 더 누르면 삭제"; del.classList.add("armed");
+          setTimeout(function(){ armed=false; del.textContent="삭제"; del.classList.remove("armed"); }, 3000);
+          return;
+        }
+        // 보고 있는 날짜부터 목록에서 빼고, 이전 날짜에서는 그대로 보이도록 종료일만 기록한다
+        if(todo.from && todo.from>=ds){
+          state.morningTodos=state.morningTodos.filter(function(x){ return x.id!==todo.id; });
+        }else{
+          todo.until=ds;
+        }
+        saveMorningTodos();
+        // 해당 날짜 이후의 업무 기록에서는 함께 제거하고, 이전 날짜 기록은 그대로 둔다
+        var t0=ds;
+        Object.keys(state.workLog).forEach(function(ym){
+          var m=state.workLog[ym], changed=false;
+          Object.keys(m).forEach(function(d){
+            if(d>=t0 && m[d].am && m[d].am[todo.id]){
+              delete m[d].am[todo.id]; changed=true;
+              if(!Object.keys(m[d].am).length && !Object.keys(m[d].pm||{}).length) delete m[d];
+            }
+          });
+          if(changed) saveWorkLog(ym);
+        });
+        render(true);
+      });
+      var tools=el("div","todotools");
+      tools.appendChild(pin);
+      if(canEditList) tools.appendChild(del);
+      head.appendChild(tools);
+      item.appendChild(head);
+
+      var who=el("div","checkrow todowho");
+      if(!emps.length) who.appendChild(el("span","status","등록된 근무자가 없습니다."));
+      emps.forEach(function(emp){
+        var b=el("button","checkbtn"+(bys.indexOf(emp.id)>=0?" on":""), emp.name);
+        b.type="button";
+        b.addEventListener("click", function(){
+          editDay(ds, function(d){
+            var cur=recBys(d.am[todo.id]).slice();
+            var names=(d.am[todo.id] && d.am[todo.id].names) ? d.am[todo.id].names.slice() : [];
+            var idx=cur.indexOf(emp.id);
+            if(idx>=0){ cur.splice(idx,1); names.splice(idx,1); }
+            else{ cur.push(emp.id); names.push(emp.name); }
+            if(cur.length) d.am[todo.id]={ text:todo.text, bys:cur, names:names };
+            else delete d.am[todo.id];
+          });
+          render(true);
+        });
+        who.appendChild(b);
+      });
+      item.appendChild(who);
+      pad.appendChild(item);
+    });
+
+    if(list.length){
+      var resetBtn=el("button","btn ghost","이 날 체크 초기화"); resetBtn.type="button";
+      resetBtn.style.marginTop="8px";
+      resetBtn.addEventListener("click", function(){
+        editDay(ds, function(d){ d.am={}; });
+        render(true);
+      });
+      pad.appendChild(resetBtn);
+    }
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+  function viewChecklistPM(app, ds){
+    var card=el("div","card");
+    var pad=el("div","pad");
+    var pm=dayOf(ds).pm;
 
     pad.appendChild(el("div","addlabel","번호 체크"));
     var numRow=el("div","checkrow");
     for(var i=1;i<=14;i++){
       (function(n){
         var key=String(n);
-        var b=el("button","checkbtn"+(state.checklist[key]?" on":""), String(n));
+        var b=el("button","checkbtn"+(pm[key]?" on":""), String(n));
         b.type="button";
         b.addEventListener("click", function(){
-          state.checklist[key]=!state.checklist[key];
-          saveChecklist();
-          b.className="checkbtn"+(state.checklist[key]?" on":"");
+          var on=false;
+          editDay(ds, function(d){ if(d.pm[key]) delete d.pm[key]; else { d.pm[key]=true; on=true; } });
+          b.className="checkbtn"+(on?" on":"");
         });
         numRow.appendChild(b);
       })(i);
@@ -1692,24 +2053,32 @@
 
     pad.appendChild(el("div","addlabel","마감 체크"));
     var nameRow=el("div","checkrow");
-    [["coffee","커피 마감"],["kitchen","주방 마감"],["recycle","분리수거"]].forEach(function(t){
-      var b=el("button","checkbtn checkbtn-wide"+(state.checklist[t[0]]?" on":""), t[1]);
+    var nameBtns={};
+    var coffeeKeys=["coffeeFront","coffeeBack"];
+    function paintName(k){ nameBtns[k].className="checkbtn checkbtn-wide"+(dayOf(ds).pm[k]?" on":""); }
+    PM_ITEMS.forEach(function(t){
+      var b=el("button","checkbtn checkbtn-wide"+(pm[t[0]]?" on":""), t[1]);
       b.type="button";
+      nameBtns[t[0]]=b;
       b.addEventListener("click", function(){
-        state.checklist[t[0]]=!state.checklist[t[0]];
-        saveChecklist();
-        b.className="checkbtn checkbtn-wide"+(state.checklist[t[0]]?" on":"");
+        editDay(ds, function(d){
+          if(d.pm[t[0]]){ delete d.pm[t[0]]; }
+          else{
+            d.pm[t[0]]=true;
+            if(coffeeKeys.indexOf(t[0])>=0) coffeeKeys.forEach(function(k){ if(k!==t[0]) delete d.pm[k]; });
+          }
+        });
+        PM_ITEMS.forEach(function(x){ paintName(x[0]); });
       });
       nameRow.appendChild(b);
     });
     pad.appendChild(nameRow);
 
     var resetMsg=el("p","status","");
-    var resetBtn=el("button","btn ghost","전체 초기화"); resetBtn.type="button";
+    var resetBtn=el("button","btn ghost","이 날 전체 초기화"); resetBtn.type="button";
     resetBtn.style.marginTop="16px";
     resetBtn.addEventListener("click", function(){
-      state.checklist={};
-      saveChecklist();
+      editDay(ds, function(d){ d.pm={}; });
       numRow.querySelectorAll("button").forEach(function(b){ b.className="checkbtn"; });
       nameRow.querySelectorAll("button").forEach(function(b){ b.className="checkbtn checkbtn-wide"; });
       resetMsg.textContent="모두 초기화되었습니다.";
@@ -1718,6 +2087,108 @@
     pad.appendChild(resetBtn);
     pad.appendChild(resetMsg);
 
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+
+  /* ---- 업무 기록 (달력) ---- */
+  function buildWorkLogCalendar(ym, opts){
+    var cal=el("div","cal chips-mode");
+    var dow=el("div","dow");
+    ["일","월","화","수","목","금","토"].forEach(function(d){ dow.appendChild(el("div",null,d)); });
+    cal.appendChild(dow);
+    var grid=el("div","grid");
+    var lead=firstDow(ym), total=daysInMonth(ym), today=todayStr();
+    for(var i=0;i<lead;i++) grid.appendChild(el("div","cell blank"));
+    for(var d=1; d<=total; d++){
+      var ds=ym+"-"+pad(d);
+      var day=dayOf(ds);
+      var amN=Object.keys(day.am).length, pmN=Object.keys(day.pm).length;
+      var dowIdx=(lead+d-1)%7;
+      var cell=document.createElement("button"); cell.type="button";
+      cell.className="cell"+(dowIdx===0?" sun":"")+(dowIdx===6?" sat":"")
+        +((amN||pmN)?" worked":"")+(ds===today?" today":"")+(opts.selected===ds?" sel":"");
+      cell.appendChild(el("div","num",String(d)));
+      if(amN) cell.appendChild(el("span","wlchip wl-am","업무 "+amN));
+      if(pmN) cell.appendChild(el("span","wlchip wl-pm","마감 "+pmN));
+      (function(ds){ cell.addEventListener("click", function(){ opts.onPick(ds); }); })(ds);
+      grid.appendChild(cell);
+    }
+    var tail=(7-((lead+total)%7))%7;
+    for(var j=0;j<tail;j++) grid.appendChild(el("div","cell blank"));
+    cal.appendChild(grid);
+    return cal;
+  }
+  function viewWorkLog(app){
+    app.appendChild(topBar("업무 기록","home"));
+    app.appendChild(ymNavPicker());
+    var ym=state.ym;
+    app.appendChild(buildWorkLogCalendar(ym, {
+      selected: state.logSelDate,
+      onPick: function(ds){ state.logSelDate=ds; render(true); }
+    }));
+
+    var card=el("div","card");
+    if(!state.logSelDate){
+      card.appendChild(el("div","empty","달력에서 날짜를 누르면 그날 한 업무와 한 사람이 여기에 나옵니다."));
+      app.appendChild(card); return;
+    }
+    var ds=state.logSelDate;
+    var day=dayOf(ds);
+    var head=el("div","card-head");
+    head.appendChild(el("div","h", dayLabel(ds)));
+    card.appendChild(head);
+    var pad=el("div","pad");
+
+    var amSec=el("div","wlsec");
+    amSec.appendChild(el("div","wlsechead","업무"));
+    var amIds=Object.keys(day.am);
+    if(!amIds.length) amSec.appendChild(el("div","wlempty","기록 없음"));
+    amIds.forEach(function(id){
+      var r=day.am[id];
+      var bysList=recBys(r);
+      var whoNames=bysList.map(function(id,i){
+        var emp=empById(id);
+        return emp? emp.name : ((r.names&&r.names[i])||"삭제된 근무자");
+      });
+      var row=el("div","wlrow");
+      row.appendChild(el("span",null, r.text));
+      row.appendChild(el("span","wlby", whoNames.join(", ")));
+      amSec.appendChild(row);
+    });
+    pad.appendChild(amSec);
+
+    var pmSec=el("div","wlsec");
+    pmSec.appendChild(el("div","wlsechead","마감 체크"));
+    var nums=Object.keys(day.pm).filter(function(k){ return /^\d+$/.test(k); })
+      .map(Number).sort(function(a,b){ return a-b; });
+    var names=PM_ITEMS.filter(function(t){ return day.pm[t[0]]; }).map(function(t){ return t[1]; });
+    if(!nums.length && !names.length) pmSec.appendChild(el("div","wlempty","기록 없음"));
+    if(nums.length){
+      var r1=el("div","wlrow");
+      r1.appendChild(el("span",null,"번호 체크"));
+      r1.appendChild(el("span","wlby", nums.join(", ")));
+      pmSec.appendChild(r1);
+    }
+    names.forEach(function(n){
+      var r2=el("div","wlrow");
+      r2.appendChild(el("span",null,n));
+      r2.appendChild(el("span","wlby","완료"));
+      pmSec.appendChild(r2);
+    });
+    var closers=rowsOfHandover(ym).filter(function(r){ return r.date===ds && r.closer; }).map(function(r){ return r.closer; });
+    if(closers.length){
+      var r3=el("div","wlrow");
+      r3.appendChild(el("span",null,"마감자(인수인계)"));
+      r3.appendChild(el("span","wlby", closers.join(", ")));
+      pmSec.appendChild(r3);
+    }
+    pad.appendChild(pmSec);
+
+    var edit=el("button","btn ghost","이 날 체크리스트 열기"); edit.type="button";
+    edit.style.marginTop="14px";
+    edit.addEventListener("click", function(){ go("checklist",{ date:ds }); });
+    pad.appendChild(edit);
     card.appendChild(pad);
     app.appendChild(card);
   }
@@ -1787,7 +2258,7 @@
       b.type="button";
       b.addEventListener("click", function(){
         if(state.prepayTab===t[0]) return;
-        state.prepayTab=t[0]; render(true);
+        state.prepayTab=t[0]; animateNext=true; render(true);
       });
       tabs.appendChild(b);
     });
@@ -3399,7 +3870,7 @@
       b.type="button";
       b.addEventListener("click", function(){
         if(state.schedTab===t[0]) return;
-        state.schedTab=t[0]; render(true);
+        state.schedTab=t[0]; animateNext=true; render(true);
       });
       tabs.appendChild(b);
     });
@@ -3968,6 +4439,8 @@
       coffeeFrontFirst: state.coffeeFrontFirst,
       posts: state.posts,
       checklist: state.checklist,
+      morningTodos: state.morningTodos,
+      workLog: state.workLog,
       prepayCustomers: state.prepayCustomers,
       prepayVisits: state.prepayVisits,
       prepayAmtCustomers: state.prepayAmtCustomers,
@@ -3985,6 +4458,8 @@
     state.schedule = (payload.schedule && typeof payload.schedule==="object") ? payload.schedule : {};
     state.posts = Array.isArray(payload.posts) ? payload.posts : [];
     state.checklist = (payload.checklist && typeof payload.checklist==="object") ? payload.checklist : {};
+    state.morningTodos = Array.isArray(payload.morningTodos) ? payload.morningTodos : [];
+    state.workLog = (payload.workLog && typeof payload.workLog==="object") ? payload.workLog : {};
     state.prepayCustomers = Array.isArray(payload.prepayCustomers) ? payload.prepayCustomers : [];
     state.prepayVisits = (payload.prepayVisits && typeof payload.prepayVisits==="object") ? payload.prepayVisits : {};
     state.prepayAmtCustomers = Array.isArray(payload.prepayAmtCustomers) ? payload.prepayAmtCustomers : [];
@@ -4009,6 +4484,8 @@
       Object.keys(state.data[ym]||{}).forEach(function(id){ jobs.push(saveMonth(ym,id)); });
     });
     Object.keys(state.handover).forEach(function(ym){ jobs.push(saveHandover(ym)); });
+    jobs.push(saveMorningTodos());
+    Object.keys(state.workLog).forEach(function(ym){ jobs.push(saveWorkLog(ym)); });
     Object.keys(state.schedule).forEach(function(weekStart){ jobs.push(saveSchedule(weekStart)); });
     return Promise.all(jobs);
   }
@@ -4134,6 +4611,8 @@
         state.schedule={};
         state.posts=[];
         state.checklist={};
+        state.morningTodos=[];
+        state.workLog={};
         state.prepayCustomers=[];
         state.prepayVisits={};
         state.prepayAmtCustomers=[];
@@ -4169,6 +4648,7 @@
     return a && (a.tagName==="INPUT"||a.tagName==="TEXTAREA") && a.id!=="wage" && a.closest("#app");
   }
   var pending=false;
+  var animateNext=false;   // 화면 이동·탭 전환 때만 등장 애니메이션을 재생한다 (실시간 갱신 때는 재생하지 않음)
   function render(force){
     if(!force && isEditing()){ pending=true; return; }
     pending=false;
@@ -4185,6 +4665,7 @@
     else if(v==="handover") viewHandover(app);
     else if(v==="board") viewBoard(app);
     else if(v==="checklist") viewChecklist(app);
+    else if(v==="worklog") viewWorkLog(app);
     else if(v==="prepay") viewPrepay(app);
     else if(v==="prepaydetail") viewPrepayDetail(app);
     else if(v==="prepayamtdetail") viewPrepayAmtDetail(app);
@@ -4193,6 +4674,12 @@
     var s=el("p","status"); s.id="statusLine";
     app.appendChild(s);
     document.title=(VIEWS[v]?VIEWS[v].title:"창릉 프리미어")+" — 창릉 프리미어";
+    if(animateNext){
+      animateNext=false;
+      app.classList.remove("enter"); void app.offsetWidth; app.classList.add("enter");
+      clearTimeout(render._t);
+      render._t=setTimeout(function(){ app.classList.remove("enter"); }, 800);
+    }
   }
   function flushPending(){
     if(pending && !isEditing()) render();
@@ -4204,6 +4691,7 @@
 
   /* ===================== boot ===================== */
   loadLocal();
+  animateNext=true;
   render();
 
   (window.__dbReady || Promise.reject(new Error("no loader"))).then(function(dbAdapter){
