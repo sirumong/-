@@ -580,6 +580,7 @@
   .todoitem.flash-down{animation:todoflashdown .9s ease-out}
   @keyframes todoflashup{0%{box-shadow:0 0 0 6px rgba(246,139,30,.35),var(--shadow-lg)}100%{box-shadow:inset 0 0 0 2px var(--feature),var(--shadow)}}
   @keyframes todoflashdown{0%{box-shadow:0 0 0 6px rgba(124,136,120,.30),var(--shadow-lg)}100%{box-shadow:var(--shadow)}}
+  .todoeditinput{flex:1;min-width:0;font-size:16px;padding:8px 10px}
   .todotools{display:flex;align-items:center;gap:2px;flex:none}
   .todo-pin{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:none;border:none;border-radius:8px;color:var(--muted);cursor:pointer;opacity:.55}
   .todo-pin.on{color:var(--accent-text);opacity:1}
@@ -749,6 +750,7 @@
     checklist: {},         // 체크리스트 항목별 체크 여부
     checkTab: "am",        // 체크리스트 탭: am(오전) | pm(오후)
     checkDate: todayStr(), // 체크리스트에서 보고 있는 날짜
+    todoEditId: null,      // 이름을 수정 중인 체크 목록 id
     workLog: {},           // workLog[ym][date] = { am:{todoId:{text,by}}, pm:{key:true} }
     logSelDate: null,      // 업무 기록 달력에서 고른 날짜
     morningTodos: [],      // 오전 할 일 [{id,text,doneBy}]
@@ -1417,6 +1419,7 @@
     if(view==="admin"){ state.adminUnlocked=false; state.adminSection=null; }
     if(view==="handover") state.handoverEditId=null;
     if(view==="checklist") state.checkDate=opts.date||todayStr();
+    state.todoEditId=null;
     if(view==="worklog") state.logSelDate=null;
     if(view==="board"){
       state.boardSelId=(opts.postId!==undefined)? opts.postId : null;
@@ -1815,7 +1818,7 @@
     // 날짜 이동
     var ds=state.checkDate;
     function setCheckDate(n){
-      state.checkDate=n; subscribeWorkLog([n.slice(0,7)]); animateNext=true; render(true);
+      state.todoEditId=null; state.checkDate=n; subscribeWorkLog([n.slice(0,7)]); animateNext=true; render(true);
     }
     var bar=el("div","datebar");
     var prev=el("button","calnavbtn","‹"); prev.type="button"; prev.setAttribute("aria-label","전날");
@@ -1926,7 +1929,36 @@
       var item=el("div","todoitem"+(bys.length?" done":"")+(todoPinned(todo)?" pinned":""));
       item.dataset.id=todo.id;
       var head=el("div","todohead");
-      head.appendChild(el("div","todotext", todo.text));
+      var editing=(state.todoEditId===todo.id);
+      if(!editing) head.appendChild(el("div","todotext", todo.text));
+      else{
+        var ei=document.createElement("input"); ei.type="text"; ei.className="ti todoeditinput"; ei.value=todo.text;
+        ei.maxLength=60;
+        function saveName(){
+          var nt=ei.value.trim();
+          if(nt && nt!==todo.text){
+            todo.text=nt;
+            saveMorningTodos();
+            // 지난 기록의 이름도 함께 바꾼다
+            Object.keys(state.workLog).forEach(function(y){
+              var mm=state.workLog[y], ch=false;
+              Object.keys(mm).forEach(function(d2){
+                var r=mm[d2].am && mm[d2].am[todo.id];
+                if(r && r.text!==nt){ r.text=nt; ch=true; }
+              });
+              if(ch) saveWorkLog(y);
+            });
+          }
+          state.todoEditId=null; render(true);
+        }
+        ei.addEventListener("keydown", function(e){
+          if(e.key==="Enter"){ e.preventDefault(); saveName(); }
+          else if(e.key==="Escape"){ state.todoEditId=null; render(true); }
+        });
+        head.appendChild(ei);
+        head._editInput=ei; head._saveName=saveName;
+        setTimeout(function(){ try{ ei.focus(); ei.select(); }catch(e){} }, 0);
+      }
       var pin=el("button","todo-pin"+(todoPinned(todo)?" on":""),""); pin.type="button";
       pin.innerHTML=iconSvg("pin",18);
       pin.setAttribute("aria-label", todoPinned(todo)?"고정 해제":"고정");
@@ -1989,8 +2021,22 @@
         render(true);
       });
       var tools=el("div","todotools");
-      tools.appendChild(pin);
-      if(canEditList) tools.appendChild(del);
+      if(editing){
+        var okB=el("button","todo-del armed","저장"); okB.type="button";
+        okB.style.color="var(--accent-text)";
+        okB.addEventListener("click", function(){ head._saveName(); });
+        var noB=el("button","todo-del","취소"); noB.type="button";
+        noB.addEventListener("click", function(){ state.todoEditId=null; render(true); });
+        tools.appendChild(okB); tools.appendChild(noB);
+      }else{
+        var editB=el("button","todo-pin todo-edit",""); editB.type="button";
+        editB.innerHTML=iconSvg("pen",17);
+        editB.setAttribute("aria-label","이름 수정"); editB.title="이름 수정";
+        editB.addEventListener("click", function(){ state.todoEditId=todo.id; render(true); });
+        tools.appendChild(editB);
+        tools.appendChild(pin);
+        if(canEditList) tools.appendChild(del);
+      }
       head.appendChild(tools);
       item.appendChild(head);
 
