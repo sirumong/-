@@ -728,6 +728,9 @@
   .wlday{margin:20px 2px 12px}
   .wldaytitle{font-size:22px;font-weight:700;margin-bottom:10px}
   .wlsummary{display:flex;flex-wrap:wrap;gap:8px}
+  button.wlstat{font-family:inherit;border:none;cursor:pointer}
+  .wlstat.on{background:var(--ink);color:#fff}
+  .wlstat.on b,.wlstat.on.s-am b,.wlstat.on.s-open b,.wlstat.on.s-pm b{color:#fff}
   .wlstat{font-size:13.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);color:var(--muted)}
   .wlstat b{font-size:15px;color:var(--ink);margin-right:1px}
   .wlstat.s-am b{color:var(--accent-text)}
@@ -828,6 +831,7 @@
     todoEditId: null,      // 이름을 수정 중인 체크 목록 id
     workLog: {},           // workLog[ym][date] = { am:{todoId:{text,by}}, pm:{key:true} }
     logSelDate: null,      // 업무 기록 달력에서 고른 날짜
+    logFilter: null,       // 업무 기록 상세 필터: null(전체) | who | am | open | pm
     morningTodos: [],      // 오전 할 일 [{id,text,doneBy}]
     prepayCustomers: [],   // 횟수 선결제 고객 목록
     prepayVisits: {},      // 고객id별 방문 기록(서명 포함)
@@ -860,7 +864,7 @@
     coffeeFrontFirst: true, // 일요일에 "커피 앞"부터 시작할지, "커피 뒤"부터 시작할지
     adminPassword: "12345",
     adminUnlocked: false,  // 정산·관리자 메뉴에 새로 들어갈 때마다 다시 확인한다
-    adminSection: null    // 관리자 안에서 고른 하위 항목: password | settle | backup
+    adminSection: null    // 관리자 안에서 고른 하위 항목: password | sales | worklog | settle | backup | reset
   };
 
   var VIEWS = {
@@ -1495,7 +1499,7 @@
     if(view==="handover") state.handoverEditId=null;
     if(view==="checklist") state.checkDate=opts.date||todayStr();
     state.todoEditId=null; state.openPending={}; state.openDraft={};
-    if(view==="worklog") state.logSelDate=null;
+    if(view==="worklog"){ state.logSelDate=null; state.logFilter=null; }
     if(view==="board"){
       state.boardSelId=(opts.postId!==undefined)? opts.postId : null;
       state.boardWriting=false;
@@ -1516,7 +1520,7 @@
   function setYm(ym){
     state.ym=ym; state.selDate=null; state.logSelDate=null;
     subscribe(ym);
-    if(state.view==="worklog") subscribeWorkLog([ym]);
+    if(state.view==="worklog" || (state.view==="admin" && state.adminSection==="worklog")) subscribeWorkLog([ym]);
     render(true);
   }
   function setWeek(weekStart){
@@ -1866,7 +1870,6 @@
       ["add","근무자 추가","userplus"],
       ["board","게시판","flag"],
       ["checklist","업무리스트","checklist"],
-      ["worklog","업무 기록","log"],
       ["prepay","선결제","pen"],
       ["admin","관리자","gear"]
     ].forEach(function(t){
@@ -2155,18 +2158,18 @@
     app.appendChild(card);
   }
   /* ---- 오픈 체크 ---- */
-  var OPEN_STAFF=["조나영","박선은"];
+  var OPEN_STAFF=["조나영","박선은","양희정"];
   var OPEN_ROOMS=Array.from({length:14},function(_,i){ return i+1; });
   var OPEN_SECTIONS=[
     { key:"selfbar", title:"셀프바 식음료, 휴지통", pickLabel:"장소",
       options:[["lobby","로비"],["counter","카운터"],["r1","1번룸"],["r8","8번룸"],["r12","12번룸"]] },
     { key:"shirt",   title:"티셔츠 세탁" },
-    { key:"room",    title:"룸 별 청소", pickLabel:"룸 번호",
+    { key:"room",    title:"룸 별 청소(키패드, 모니터, 거울, 쓰레기통 뒤)", pickLabel:"룸 번호",
       options:OPEN_ROOMS.map(function(n){ return [String(n), n+"번"]; }), compact:true },
     { key:"filter",  title:"공기 청정기 필터", pickLabel:"룸 번호",
       options:OPEN_ROOMS.map(function(n){ return [String(n), n+"번"]; }), compact:true },
-    { key:"fridge",  title:"냉장고 정리", pickLabel:"항목",
-      options:[["food","음식 재료"],["sauce","소스"]] }
+    { key:"fridge",  title:"주방 정리", pickLabel:"항목",
+      options:[["food","음식 재료"],["sauce","소스"],["drain","하구수"]] }
   ];
   // 저장 형태: d.open[섹션] = { items:{ 항목키:[이름,...] }, bys:[이름,...](티셔츠 세탁) }
   // 예전 형태(places/nums + bys)는 읽을 때 변환한다.
@@ -2438,8 +2441,8 @@
     cal.appendChild(grid);
     return cal;
   }
-  function viewWorkLog(app){
-    app.appendChild(topBar("업무 기록","home"));
+  function viewWorkLog(app, inAdmin){
+    app.appendChild(topBar("업무 기록", inAdmin?"__admin_menu__":"home"));
     app.appendChild(ymNavPicker());
     var ym=state.ym;
     app.appendChild(buildWorkLogCalendar(ym, {
@@ -2486,7 +2489,13 @@
       }
       if(had) openSecCount++;
     });
+    var flt=state.logFilter;
+    var showAm=(!flt||flt==="who"||flt==="am"), showOpen=(!flt||flt==="who"||flt==="open"), showPm=(!flt||flt==="pm");
     var list=Object.keys(people).map(function(k){ return people[k]; });
+    var listAll=list;
+    list=list.map(function(pp){
+      return { name:pp.name, am:showAm?pp.am:[], open:showOpen?pp.open:[] };
+    }).filter(function(pp){ return pp.am.length+pp.open.length>0; });
     list.sort(function(x,y){
       var dx=x.am.length+x.open.length, dy=y.am.length+y.open.length;
       return dy-dx || x.name.localeCompare(y.name,"ko");
@@ -2502,19 +2511,26 @@
     var head=el("div","wlday");
     head.appendChild(el("div","wldaytitle", dayLabel(ds)));
     var sum=el("div","wlsummary");
-    function stat(label, n, cls){
-      var c=el("span","wlstat "+cls); c.appendChild(el("b",null,String(n))); c.appendChild(document.createTextNode((label==="명"?"":" ")+label));
+    function stat(label, n, cls, key){
+      var c=el("button","wlstat "+cls+(state.logFilter===key?" on":"")); c.type="button";
+      c.appendChild(el("b",null,String(n))); c.appendChild(document.createTextNode((label==="명"?"":" ")+label));
+      c.addEventListener("click", function(){
+        state.logFilter=(state.logFilter===key)? null : key;   // 같은 버튼을 다시 누르면 전체 보기
+        render(true);
+      });
       sum.appendChild(c);
     }
-    stat("명", list.length, "s-who");
-    stat("업무", Object.keys(day.am).length, "s-am");
-    stat("오픈", openSecCount, "s-open");
-    stat("마감", pmCount, "s-pm");
+    stat("명", listAll.length, "s-who", "who");
+    stat("업무", Object.keys(day.am).length, "s-am", "am");
+    stat("오픈", openSecCount, "s-open", "open");
+    stat("마감", pmCount, "s-pm", "pm");
     head.appendChild(sum);
     app.appendChild(head);
 
-    if(!list.length && !pmCount && !closers.length){
-      var none=el("div","card"); none.appendChild(el("div","empty","이 날은 기록이 없습니다."));
+    var pmVisible = showPm && (pmCount || closers.length);
+    if(!list.length && !pmVisible){
+      var none=el("div","card");
+      none.appendChild(el("div","empty", flt? "선택한 항목에 해당하는 기록이 없습니다." : "이 날은 기록이 없습니다."));
       app.appendChild(none);
     }
 
@@ -2542,7 +2558,7 @@
     });
 
     // ---- 마감 (사람이 기록되지 않는 체크)
-    if(pmCount || closers.length){
+    if(pmVisible){
       var pm=el("div","wlperson wlpm");
       var pmh=el("div","wlpersonhead");
       var pmIcon=el("span","avatarcircle a-orange"); pmIcon.textContent="마";
@@ -4682,6 +4698,7 @@
       [
         ["password","관리자 비밀번호 변경","gear"],
         ["sales","매장 매출","cash"],
+        ["worklog","업무 기록","log"],
         ["settle","정산","chart"],
         ["backup","데이터 백업","download"],
         ["reset","전체 초기화","refresh"]
@@ -4690,7 +4707,11 @@
         var ic=el("div","gridicon"); ic.innerHTML=iconSvg(t[2],28);
         b.appendChild(ic);
         b.appendChild(el("span","gridtitle",t[1]));
-        b.addEventListener("click", function(){ state.adminSection=t[0]; render(true); });
+        b.addEventListener("click", function(){
+          state.adminSection=t[0];
+          if(t[0]==="worklog"){ state.logSelDate=null; state.logFilter=null; subscribeWorkLog([state.ym]); }
+          render(true);
+        });
         menu.appendChild(b);
       });
       app.appendChild(menu);
@@ -4731,6 +4752,8 @@
       salesChartPad.appendChild(buildSalesChart(salesYm, salesMap));
       salesChartCard.appendChild(salesChartPad);
       app.appendChild(salesChartCard);
+    }else if(state.adminSection==="worklog"){
+      viewWorkLog(app, true);
     }else if(state.adminSection==="reset"){
       app.appendChild(topBar("전체 초기화","__admin_menu__"));
       renderResetCard(app);
