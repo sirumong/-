@@ -560,6 +560,25 @@
   .datebar .dlabel{flex:1;text-align:center;font:inherit;font-size:16px;font-weight:700;color:var(--ink);background:var(--surface);border:none;box-shadow:var(--shadow);border-radius:10px;padding:10px 8px;cursor:pointer}
   .wlchip{display:block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 4px;margin-top:3px;white-space:nowrap;text-align:center}
   .wl-am{background:rgba(77,184,72,.16);color:var(--accent-text)}
+  .wl-open{background:rgba(52,120,200,.14);color:#2B66B0}
+  .wlby.wlwrap{white-space:normal;text-align:right}
+  .openchip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:52px;line-height:1.1}
+  .openchip .chipmain{font-size:15.5px;font-weight:600}
+  .openchip .chipwho{font-size:10.5px;font-weight:600;min-height:12px;opacity:.95}
+  .openchip.compactchip{min-width:52px;padding:0 6px}
+  .checkbtn.own-a{background:var(--accent);color:#fff}
+  .checkbtn.own-b{background:#3478C8;color:#fff}
+  .checkbtn.own-both{background:var(--feature);color:#fff}
+  .brushbtn.dim,.applybtn.dim{opacity:.4}
+  .applybtn{margin-top:4px;padding:10px 16px}
+  .checkbtn.own-s0{background:var(--accent);color:#fff}
+  .checkbtn.own-s1{background:#3478C8;color:#fff}
+  .checkbtn.own-s2{background:#8B5CC8;color:#fff}
+  .checkbtn.own-s3{background:#12A3A3;color:#fff}
+  .checkbtn.own-s4{background:#D6498B;color:#fff}
+  .checkbtn.own-s5{background:#8C6D1F;color:#fff}
+  .checkbtn.pending{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+  .opensublabel{font-size:12.5px;font-weight:700;color:var(--muted);margin:2px 0 6px}
   .wl-pm{background:rgba(246,139,30,.16);color:#B8620A}
   .wlsec{margin-top:14px}
   .wlsec:first-child{margin-top:0}
@@ -675,6 +694,62 @@
     .addline.wide input.ti,.addline.wide .datebtn{flex:none;min-width:120px}
   }
 
+
+  /* ===== 체크리스트 정리 (업무·오픈 탭) ===== */
+  .cklist{background:none;box-shadow:none;border-radius:0}
+  .cklist .pad{padding:0}
+  .cklist .addlabel{font-size:15px;font-weight:700;margin-bottom:10px}
+  .cklist .addline{display:flex;gap:8px;align-items:stretch;margin-bottom:16px;flex-wrap:nowrap}
+  .cklist .addline input.ti{height:46px;padding:0 14px;font-size:16px;flex:1;min-width:0}
+  .cklist .addline .btn{height:46px;padding:0 22px;font-size:16px;flex:none}
+  .cklist .todoitem{padding:16px;border-radius:16px;margin-bottom:12px}
+  .cklist .todohead{align-items:center;gap:8px;margin-bottom:12px;min-height:36px}
+  .cklist .todotext{flex:1;min-width:0;font-size:17px;font-weight:700;line-height:1.35}
+  .cklist .todotools{gap:0}
+  .todo-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;
+    background:none;border:none;border-radius:10px;color:var(--muted);cursor:pointer;opacity:1;white-space:nowrap;
+    font:inherit;font-size:13px;font-weight:700}
+  .todo-icon:hover{background:var(--rule)}
+  .todo-pin.todo-icon:not(.on){opacity:.7}
+  .todo-pin.on{color:var(--feature)}
+  .todo-del.todo-icon.armed{width:auto;padding:0 12px;background:var(--danger);color:#fff;font-weight:700}
+  .todosave,.todocancel{font:inherit;font-size:14px;font-weight:700;height:36px;padding:0 14px;border:none;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .todosave{background:var(--accent);color:var(--accent-ink)}
+  .todocancel{background:var(--rule);color:var(--ink)}
+  .cklist .todoeditinput{height:40px;padding:0 12px;font-size:16px}
+  .cklist .todowho{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px;margin:0}
+  .cklist .todowho .checkbtn{min-width:0;width:100%;height:42px;padding:0 6px;font-size:15px;font-weight:600;border-radius:11px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cklist > .pad > .btn.ghost{width:100%;height:46px;margin-top:6px;font-size:15px}
+  .cklist .checkrow{gap:8px;margin-bottom:14px}
+  .cklist .todoitem .checkrow:last-child{margin-bottom:0}
+
+  /* ===== 업무 기록 상세 (사람 중심) ===== */
+  .wlday{margin:20px 2px 12px}
+  .wldaytitle{font-size:22px;font-weight:700;margin-bottom:10px}
+  .wlsummary{display:flex;flex-wrap:wrap;gap:8px}
+  .wlstat{font-size:13.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);color:var(--muted)}
+  .wlstat b{font-size:15px;color:var(--ink);margin-right:1px}
+  .wlstat.s-am b{color:var(--accent-text)}
+  .wlstat.s-open b{color:#2B66B0}
+  .wlstat.s-pm b{color:#B8620A}
+  .wlperson{background:var(--surface);box-shadow:var(--shadow);border-radius:16px;padding:16px;margin-bottom:12px}
+  .wlpersonhead{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .wlpersonname{font-size:19px;font-weight:700}
+  .wlcount{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--muted);background:var(--rule);border-radius:999px;padding:4px 11px;white-space:nowrap}
+  .wltask{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--rule)}
+  .wltask:first-of-type{margin-top:8px}
+  .wltag{flex:none;font-size:12px;font-weight:700;border-radius:7px;padding:4px 0;width:44px;text-align:center;margin-top:1px}
+  .wltag.t-am{background:rgba(77,184,72,.16);color:var(--accent-text)}
+  .wltag.t-open{background:rgba(52,120,200,.14);color:#2B66B0}
+  .wltaskbody{min-width:0;flex:1}
+  .wltasktext{font-size:16px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+  .wltaskdetail{font-size:14px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .wlchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .wlpill{font-size:14px;font-weight:600;padding:7px 13px;border-radius:999px;background:rgba(246,139,30,.14);color:#B8620A}
+  .wlpm .wlempty{padding:0}
+  .wleditbtn{width:100%;height:46px;margin-top:4px;font-size:15px}
+  .avatarcircle.a-blue{background:rgba(52,120,200,.14);color:#2B66B0}
   /* ===== 움직임(애니메이션) ===== */
   @keyframes enterUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes enterPop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
@@ -799,7 +874,7 @@
     handover: { title:"일일 인수인계" },
     worklog:  { title:"업무 기록" },
     board:    { title:"게시판" },
-    checklist:{ title:"체크리스트" },
+    checklist:{ title:"업무리스트" },
     prepay:{ title:"선결제" },
     prepaydetail:{ title:"연습장 선결제" },
     prepayamtdetail:{ title:"금액 선결제" },
@@ -1002,7 +1077,7 @@
   function dayOf(ds){
     var m=state.workLog[ds.slice(0,7)];
     var d=(m && m[ds]) || {};
-    return { am:d.am||{}, pm:d.pm||{} };
+    return { am:d.am||{}, pm:d.pm||{}, open:d.open||{} };
   }
   function recBys(rec){
     if(!rec) return [];
@@ -1013,9 +1088,9 @@
     var ym=ds.slice(0,7);
     var m=state.workLog[ym]=state.workLog[ym]||{};
     var d=m[ds]=m[ds]||{};
-    d.am=d.am||{}; d.pm=d.pm||{};
+    d.am=d.am||{}; d.pm=d.pm||{}; d.open=d.open||{};
     fn(d);
-    if(!Object.keys(d.am).length && !Object.keys(d.pm).length) delete m[ds];
+    if(!Object.keys(d.am).length && !Object.keys(d.pm).length && !Object.keys(d.open).length) delete m[ds];
     saveWorkLog(ym);
   }
   var workLogSubs={};
@@ -1419,7 +1494,7 @@
     if(view==="admin"){ state.adminUnlocked=false; state.adminSection=null; }
     if(view==="handover") state.handoverEditId=null;
     if(view==="checklist") state.checkDate=opts.date||todayStr();
-    state.todoEditId=null;
+    state.todoEditId=null; state.openPending={}; state.openDraft={};
     if(view==="worklog") state.logSelDate=null;
     if(view==="board"){
       state.boardSelId=(opts.postId!==undefined)? opts.postId : null;
@@ -1730,6 +1805,7 @@
     checklist:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 12l3 3 6-6"></path>',
     log:'<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"></path><path d="M9 8h7M9 12h7M9 16h4"></path>',
     pin:'<path d="M9 4h6l-1 6 3 3H7l3-3z"></path><path d="M12 13v7"></path>',
+    trash:'<path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path><path d="M10 11v6M14 11v6"></path>',
     pen:'<path d="M4 20h4l10-10-4-4-10 10z"></path><path d="M14 6l4 4"></path>'
   };
   function iconSvg(name, size){
@@ -1789,7 +1865,7 @@
       ["people","개인 근무 확인","user"],
       ["add","근무자 추가","userplus"],
       ["board","게시판","flag"],
-      ["checklist","체크리스트","checklist"],
+      ["checklist","업무리스트","checklist"],
       ["worklog","업무 기록","log"],
       ["prepay","선결제","pen"],
       ["admin","관리자","gear"]
@@ -1813,12 +1889,12 @@
   }
   var PM_ITEMS=[["coffeeFront","커피 앞 마감"],["coffeeBack","커피 뒤 마감"],["kitchen","주방 마감"],["recycle","분리수거"]];
   function viewChecklist(app){
-    app.appendChild(topBar("체크리스트","home"));
+    app.appendChild(topBar("업무리스트","home"));
 
     // 날짜 이동
     var ds=state.checkDate;
     function setCheckDate(n){
-      state.todoEditId=null; state.checkDate=n; subscribeWorkLog([n.slice(0,7)]); animateNext=true; render(true);
+      state.todoEditId=null; state.openPending={}; state.openDraft={}; state.checkDate=n; subscribeWorkLog([n.slice(0,7)]); animateNext=true; render(true);
     }
     var bar=el("div","datebar");
     var prev=el("button","calnavbtn","‹"); prev.type="button"; prev.setAttribute("aria-label","전날");
@@ -1838,7 +1914,7 @@
     app.appendChild(bar);
 
     var tabs=el("div","schedtabs");
-    [["am","업무"],["pm","마감"]].forEach(function(t){
+    [["am","업무"],["open","오픈"],["pm","마감"]].forEach(function(t){
       var b=el("button","schedtab"+(state.checkTab===t[0]?" on":""), t[1]);
       b.type="button";
       b.addEventListener("click", function(){
@@ -1848,7 +1924,9 @@
       tabs.appendChild(b);
     });
     app.appendChild(tabs);
-    if(state.checkTab==="am") viewChecklistAM(app, ds); else viewChecklistPM(app, ds);
+    if(state.checkTab==="am") viewChecklistAM(app, ds);
+    else if(state.checkTab==="open") viewChecklistOpen(app, ds);
+    else viewChecklistPM(app, ds);
   }
   // 고정(pinned)된 목록만 날짜를 이어서 보이고, 고정하지 않은 목록은 만든 날에만 보인다.
   // 예전에 만든 목록(pinned 값이 없는 것)은 고정된 것으로 취급한다.
@@ -1877,7 +1955,7 @@
       Object.keys(mm).forEach(function(d2){
         if(d2>ds && mm[d2].am && mm[d2].am[todo.id]){
           delete mm[d2].am[todo.id]; ch=true;
-          if(!Object.keys(mm[d2].am).length && !Object.keys(mm[d2].pm||{}).length) delete mm[d2];
+          if(!Object.keys(mm[d2].am).length && !Object.keys(mm[d2].pm||{}).length && !Object.keys(mm[d2].open||{}).length) delete mm[d2];
         }
       });
       if(ch) saveWorkLog(y);
@@ -1893,7 +1971,7 @@
     }
   }
   function viewChecklistAM(app, ds){
-    var card=el("div","card");
+    var card=el("div","card cklist");
     var pad=el("div","pad");
     pad.appendChild(el("div","addlabel","체크 목록"));
     var canEditList = true;
@@ -1918,7 +1996,7 @@
     if(canEditList) pad.appendChild(addRow);
     else pad.appendChild(el("p","status","지난 날짜의 목록은 수정할 수 없습니다. 목록 추가·삭제는 오늘부터 적용됩니다."));
 
-    var emps=activeEmployees();
+    var emps=activeEmployees().filter(function(e){ return e.name!=="김영아"; });
     var day=dayOf(ds);
     if(!list.length){
       pad.appendChild(el("p","status", canEditList ? "등록된 할 일이 없습니다. 위에서 추가해 주세요." : "이 날은 등록된 목록이 없습니다."));
@@ -1959,7 +2037,7 @@
         head._editInput=ei; head._saveName=saveName;
         setTimeout(function(){ try{ ei.focus(); ei.select(); }catch(e){} }, 0);
       }
-      var pin=el("button","todo-pin"+(todoPinned(todo)?" on":""),""); pin.type="button";
+      var pin=el("button","todo-icon todo-pin"+(todoPinned(todo)?" on":""),""); pin.type="button";
       pin.innerHTML=iconSvg("pin",18);
       pin.setAttribute("aria-label", todoPinned(todo)?"고정 해제":"고정");
       pin.title = todoPinned(todo)?"고정됨 (눌러서 해제)":"고정 (다음 날에도 이어짐)";
@@ -1991,12 +2069,13 @@
           setTimeout(function(){ n.style.transition=""; n.style.zIndex=""; }, 500);
         });
       });
-      var del=el("button","todo-del","삭제"); del.type="button";
+      var del=el("button","todo-icon todo-del",""); del.type="button";
+      del.innerHTML=iconSvg("trash",18); del.setAttribute("aria-label","삭제"); del.title="삭제";
       var armed=false;
       del.addEventListener("click", function(){
         if(!armed){
-          armed=true; del.textContent="한 번 더 누르면 삭제"; del.classList.add("armed");
-          setTimeout(function(){ armed=false; del.textContent="삭제"; del.classList.remove("armed"); }, 3000);
+          armed=true; del.textContent="삭제하기"; del.classList.add("armed");
+          setTimeout(function(){ armed=false; del.innerHTML=iconSvg("trash",18); del.classList.remove("armed"); }, 3000);
           return;
         }
         // 보고 있는 날짜부터 목록에서 빼고, 이전 날짜에서는 그대로 보이도록 종료일만 기록한다
@@ -2013,7 +2092,7 @@
           Object.keys(m).forEach(function(d){
             if(d>=t0 && m[d].am && m[d].am[todo.id]){
               delete m[d].am[todo.id]; changed=true;
-              if(!Object.keys(m[d].am).length && !Object.keys(m[d].pm||{}).length) delete m[d];
+              if(!Object.keys(m[d].am).length && !Object.keys(m[d].pm||{}).length && !Object.keys(m[d].open||{}).length) delete m[d];
             }
           });
           if(changed) saveWorkLog(ym);
@@ -2022,15 +2101,15 @@
       });
       var tools=el("div","todotools");
       if(editing){
-        var okB=el("button","todo-del armed","저장"); okB.type="button";
-        okB.style.color="var(--accent-text)";
+        var okB=el("button","todosave","저장"); okB.type="button";
+        
         okB.addEventListener("click", function(){ head._saveName(); });
-        var noB=el("button","todo-del","취소"); noB.type="button";
+        var noB=el("button","todocancel","취소"); noB.type="button";
         noB.addEventListener("click", function(){ state.todoEditId=null; render(true); });
         tools.appendChild(okB); tools.appendChild(noB);
       }else{
-        var editB=el("button","todo-pin todo-edit",""); editB.type="button";
-        editB.innerHTML=iconSvg("pen",17);
+        var editB=el("button","todo-icon todo-pin todo-edit",""); editB.type="button";
+        editB.innerHTML=iconSvg("pen",18);
         editB.setAttribute("aria-label","이름 수정"); editB.title="이름 수정";
         editB.addEventListener("click", function(){ state.todoEditId=todo.id; render(true); });
         tools.appendChild(editB);
@@ -2072,6 +2151,199 @@
       });
       pad.appendChild(resetBtn);
     }
+    card.appendChild(pad);
+    app.appendChild(card);
+  }
+  /* ---- 오픈 체크 ---- */
+  var OPEN_STAFF=["조나영","박선은"];
+  var OPEN_ROOMS=Array.from({length:14},function(_,i){ return i+1; });
+  var OPEN_SECTIONS=[
+    { key:"selfbar", title:"셀프바 식음료, 휴지통", pickLabel:"장소",
+      options:[["lobby","로비"],["counter","카운터"],["r1","1번룸"],["r8","8번룸"],["r12","12번룸"]] },
+    { key:"shirt",   title:"티셔츠 세탁" },
+    { key:"room",    title:"룸 별 청소", pickLabel:"룸 번호",
+      options:OPEN_ROOMS.map(function(n){ return [String(n), n+"번"]; }), compact:true },
+    { key:"filter",  title:"공기 청정기 필터", pickLabel:"룸 번호",
+      options:OPEN_ROOMS.map(function(n){ return [String(n), n+"번"]; }), compact:true },
+    { key:"fridge",  title:"냉장고 정리", pickLabel:"항목",
+      options:[["food","음식 재료"],["sauce","소스"]] }
+  ];
+  // 저장 형태: d.open[섹션] = { items:{ 항목키:[이름,...] }, bys:[이름,...](티셔츠 세탁) }
+  // 예전 형태(places/nums + bys)는 읽을 때 변환한다.
+  function openItemsOf(secData){
+    if(!secData) return {};
+    if(secData.items) return secData.items;
+    var out={}, who=secData.bys||[];
+    (secData.places||[]).forEach(function(k){ out[k]=who.slice(); });
+    (secData.nums||[]).forEach(function(k){ out[String(k)]=who.slice(); });
+    return out;
+  }
+  function sameSet(a,b){
+    return a.length===b.length && a.every(function(x){ return b.indexOf(x)>=0; });
+  }
+  function openCleanup(d, secKey){
+    var sec=d.open[secKey];
+    if(!sec) return;
+    if(sec.items && !Object.keys(sec.items).length) delete sec.items;
+    if(sec.bys && !sec.bys.length) delete sec.bys;
+    if(!Object.keys(sec).length) delete d.open[secKey];
+  }
+  function openNormalize(d, secKey){
+    // 예전 형태를 새 형태로 바꿔 둔다
+    var sec=d.open[secKey]=d.open[secKey]||{};
+    if(!sec.items){
+      sec.items=openItemsOf(sec);
+      delete sec.places; delete sec.nums;
+      if(Object.keys(sec.items).length) delete sec.bys;
+    }
+    return sec;
+  }
+  function openAssign(ds, secKey, itemKey, names){
+    var result=null;
+    editDay(ds, function(d){
+      var sec=openNormalize(d, secKey);
+      var cur=sec.items[itemKey];
+      if(cur && sameSet(cur, names)){ delete sec.items[itemKey]; result=null; }
+      else{ sec.items[itemKey]=names.slice(); result=names.slice(); }
+      openCleanup(d, secKey);
+    });
+    return result;
+  }
+  function openToggleStaff(ds, secKey, name){
+    var on=false;
+    editDay(ds, function(d){
+      var sec=d.open[secKey]=d.open[secKey]||{};
+      var arr=sec.bys=sec.bys||[];
+      var i=arr.indexOf(name);
+      if(i>=0) arr.splice(i,1); else { arr.push(name); on=true; }
+      openCleanup(d, secKey);
+    });
+    return on;
+  }
+  function staffClass(name){
+    var i=OPEN_STAFF.indexOf(name);
+    return " own-s"+((i<0?0:i)%6);
+  }
+  function ownerClass(names){
+    if(!names || !names.length) return "";
+    if(names.length>1) return " own-both";
+    return staffClass(names[0]);
+  }
+  function ownerShort(names, compact){
+    if(!names || !names.length) return "";
+    if(!compact) return names.join(", ");
+    return names.map(function(n){ return n.charAt(0); }).join("·");
+  }
+  function viewChecklistOpen(app, ds){
+    var card=el("div","card cklist");
+    var pad=el("div","pad");
+    var open=dayOf(ds).open;
+
+    OPEN_SECTIONS.forEach(function(sec){
+      var data=open[sec.key]||{};
+      var item=el("div","todoitem");
+      var head=el("div","todohead");
+      head.appendChild(el("div","todotext", sec.title));
+      item.appendChild(head);
+
+      if(sec.options){
+        // 1) 장소/번호를 먼저 고르고  2) 아래 직원 버튼을 누르면 고른 것들에 한꺼번에 기록된다
+        state.openPending=state.openPending||{};
+        function pendingOf(){ return state.openPending[sec.key]||(state.openPending[sec.key]=[]); }
+        item.appendChild(el("div","opensublabel", sec.pickLabel+" (먼저 선택)"));
+        var row=el("div","checkrow");
+        var chips=[];
+        function ownersNow(k){ return openItemsOf(dayOf(ds).open[sec.key])[k]; }
+        function paintChip(c){
+          var ow=ownersNow(c.key);
+          var pend=pendingOf().indexOf(c.key)>=0;
+          c.btn.className="checkbtn openchip"+(sec.compact?" compactchip":" checkbtn-wide")
+            +(pend?" pending":"")+((!pend && ow)?" on"+ownerClass(ow):"");
+          c.btn.textContent="";
+          c.btn.appendChild(el("span","chipmain", sec.compact? c.o[0] : c.o[1]));
+          c.btn.appendChild(el("span","chipwho", pend? "선택됨" : ownerShort(ow, sec.compact)));
+        }
+        function paintAll(){ chips.forEach(paintChip); paintStaff(); }
+        sec.options.forEach(function(o){
+          var c={ o:o, key:o[0], btn:el("button","checkbtn openchip") };
+          c.btn.type="button";
+          c.btn.addEventListener("click", function(){
+            var pend=pendingOf(), i=pend.indexOf(c.key);
+            if(i>=0){ pend.splice(i,1); }
+            else if(ownersNow(c.key)){
+              editDay(ds, function(d){
+                var sc=openNormalize(d, sec.key); delete sc.items[c.key]; openCleanup(d, sec.key);
+              });
+            }else{ pend.push(c.key); }
+            paintAll();
+          });
+          chips.push(c); row.appendChild(c.btn);
+        });
+        item.appendChild(row);
+
+        item.appendChild(el("div","opensublabel","직원 (여러 명 선택 가능)"));
+        state.openDraft=state.openDraft||{};
+        function draftOf(){ return state.openDraft[sec.key]||(state.openDraft[sec.key]=[]); }
+        var staffRow=el("div","checkrow brushrow");
+        var staffBtns=[];
+        OPEN_STAFF.forEach(function(name){
+          var b=el("button","checkbtn checkbtn-wide brushbtn", name);
+          b.type="button";
+          b.addEventListener("click", function(){
+            var dr=draftOf(), i=dr.indexOf(name);
+            if(i>=0) dr.splice(i,1); else dr.push(name);
+            paintStaff();
+          });
+          staffBtns.push({b:b,name:name}); staffRow.appendChild(b);
+        });
+        var applyBtn=el("button","btn applybtn","선택한 "+sec.pickLabel+"에 기록"); applyBtn.type="button";
+        applyBtn.addEventListener("click", function(){
+          var pend=pendingOf(), names=draftOf();
+          if(!pend.length || !names.length) return;
+          var keys=pend.slice(), who=OPEN_STAFF.filter(function(n){ return names.indexOf(n)>=0; });
+          editDay(ds, function(d){
+            var sc=openNormalize(d, sec.key);
+            keys.forEach(function(k){ sc.items[k]=who.slice(); });
+            openCleanup(d, sec.key);
+          });
+          state.openPending[sec.key]=[]; state.openDraft[sec.key]=[];
+          paintAll();
+        });
+        function paintStaff(){
+          var dr=draftOf();
+          staffBtns.forEach(function(x){
+            var on=dr.indexOf(x.name)>=0;
+            x.b.className="checkbtn checkbtn-wide brushbtn"+(on?" on"+staffClass(x.name):"");
+          });
+          applyBtn.classList.toggle("dim", !(pendingOf().length && dr.length));
+        }
+        chips.forEach(paintChip); paintStaff();
+        item.appendChild(staffRow);
+        item.appendChild(applyBtn);
+      }else{
+        item.appendChild(el("div","opensublabel","직원"));
+        var who=el("div","checkrow todowho");
+        OPEN_STAFF.forEach(function(name){
+          var b=el("button","checkbtn checkbtn-wide"+((data.bys||[]).indexOf(name)>=0?" on":""), name);
+          b.type="button";
+          b.addEventListener("click", function(){
+            var on=openToggleStaff(ds, sec.key, name);
+            b.className="checkbtn checkbtn-wide"+(on?" on":"");
+          });
+          who.appendChild(b);
+        });
+        item.appendChild(who);
+      }
+      pad.appendChild(item);
+    });
+
+    var resetBtn=el("button","btn ghost","이 날 오픈 초기화"); resetBtn.type="button";
+    resetBtn.style.marginTop="8px";
+    resetBtn.addEventListener("click", function(){
+      editDay(ds, function(d){ d.open={}; });
+      render(true);
+    });
+    pad.appendChild(resetBtn);
     card.appendChild(pad);
     app.appendChild(card);
   }
@@ -2149,13 +2421,14 @@
     for(var d=1; d<=total; d++){
       var ds=ym+"-"+pad(d);
       var day=dayOf(ds);
-      var amN=Object.keys(day.am).length, pmN=Object.keys(day.pm).length;
+      var amN=Object.keys(day.am).length, pmN=Object.keys(day.pm).length, opN=Object.keys(day.open).length;
       var dowIdx=(lead+d-1)%7;
       var cell=document.createElement("button"); cell.type="button";
       cell.className="cell"+(dowIdx===0?" sun":"")+(dowIdx===6?" sat":"")
-        +((amN||pmN)?" worked":"")+(ds===today?" today":"")+(opts.selected===ds?" sel":"");
+        +((amN||pmN||opN)?" worked":"")+(ds===today?" today":"")+(opts.selected===ds?" sel":"");
       cell.appendChild(el("div","num",String(d)));
       if(amN) cell.appendChild(el("span","wlchip wl-am","업무 "+amN));
+      if(opN) cell.appendChild(el("span","wlchip wl-open","오픈 "+opN));
       if(pmN) cell.appendChild(el("span","wlchip wl-pm","마감 "+pmN));
       (function(ds){ cell.addEventListener("click", function(){ opts.onPick(ds); }); })(ds);
       grid.appendChild(cell);
@@ -2174,69 +2447,120 @@
       onPick: function(ds){ state.logSelDate=ds; render(true); }
     }));
 
-    var card=el("div","card");
     if(!state.logSelDate){
-      card.appendChild(el("div","empty","달력에서 날짜를 누르면 그날 한 업무와 한 사람이 여기에 나옵니다."));
-      app.appendChild(card); return;
+      var emptyCard=el("div","card");
+      emptyCard.appendChild(el("div","empty","달력에서 날짜를 누르면 그날 누가 어떤 일을 했는지 여기에 나옵니다."));
+      app.appendChild(emptyCard); return;
     }
     var ds=state.logSelDate;
     var day=dayOf(ds);
-    var head=el("div","card-head");
-    head.appendChild(el("div","h", dayLabel(ds)));
-    card.appendChild(head);
-    var pad=el("div","pad");
 
-    var amSec=el("div","wlsec");
-    amSec.appendChild(el("div","wlsechead","업무"));
-    var amIds=Object.keys(day.am);
-    if(!amIds.length) amSec.appendChild(el("div","wlempty","기록 없음"));
-    amIds.forEach(function(id){
+    // ---- 사람 중심으로 모으기: 이름 -> { 업무:[글], 오픈:[{title,detail}] }
+    var people={};
+    function person(name){ return people[name]||(people[name]={ name:name, am:[], open:[] }); }
+    Object.keys(day.am).forEach(function(id){
       var r=day.am[id];
-      var bysList=recBys(r);
-      var whoNames=bysList.map(function(id,i){
-        var emp=empById(id);
-        return emp? emp.name : ((r.names&&r.names[i])||"삭제된 근무자");
+      recBys(r).forEach(function(eid,i){
+        var emp=empById(eid);
+        person(emp? emp.name : ((r.names&&r.names[i])||"삭제된 근무자")).am.push(r.text);
       });
-      var row=el("div","wlrow");
-      row.appendChild(el("span",null, r.text));
-      row.appendChild(el("span","wlby", whoNames.join(", ")));
-      amSec.appendChild(row);
     });
-    pad.appendChild(amSec);
+    var openSecCount=0;
+    OPEN_SECTIONS.forEach(function(sec){
+      var dt=day.open[sec.key];
+      if(!dt) return;
+      var had=false;
+      if(sec.options){
+        var its=openItemsOf(dt), mine={};
+        sec.options.forEach(function(o){
+          (its[o[0]]||[]).forEach(function(n){
+            (mine[n]=mine[n]||[]).push(sec.compact? o[0] : o[1]);
+          });
+        });
+        Object.keys(mine).forEach(function(n){
+          had=true;
+          person(n).open.push({ title:sec.title, detail: mine[n].join(", ")+(sec.compact?"번":"") });
+        });
+      }else{
+        (dt.bys||[]).forEach(function(n){ had=true; person(n).open.push({ title:sec.title, detail:"" }); });
+      }
+      if(had) openSecCount++;
+    });
+    var list=Object.keys(people).map(function(k){ return people[k]; });
+    list.sort(function(x,y){
+      var dx=x.am.length+x.open.length, dy=y.am.length+y.open.length;
+      return dy-dx || x.name.localeCompare(y.name,"ko");
+    });
 
-    var pmSec=el("div","wlsec");
-    pmSec.appendChild(el("div","wlsechead","마감 체크"));
-    var nums=Object.keys(day.pm).filter(function(k){ return /^\d+$/.test(k); })
-      .map(Number).sort(function(a,b){ return a-b; });
-    var names=PM_ITEMS.filter(function(t){ return day.pm[t[0]]; }).map(function(t){ return t[1]; });
-    if(!nums.length && !names.length) pmSec.appendChild(el("div","wlempty","기록 없음"));
-    if(nums.length){
-      var r1=el("div","wlrow");
-      r1.appendChild(el("span",null,"번호 체크"));
-      r1.appendChild(el("span","wlby", nums.join(", ")));
-      pmSec.appendChild(r1);
-    }
-    names.forEach(function(n){
-      var r2=el("div","wlrow");
-      r2.appendChild(el("span",null,n));
-      r2.appendChild(el("span","wlby","완료"));
-      pmSec.appendChild(r2);
-    });
+    var pmNums=Object.keys(day.pm).filter(function(k){ return /^\d+$/.test(k); })
+      .map(Number).sort(function(m,n){ return m-n; });
+    var pmNames=PM_ITEMS.filter(function(t){ return day.pm[t[0]]; }).map(function(t){ return t[1]; });
     var closers=rowsOfHandover(ym).filter(function(r){ return r.date===ds && r.closer; }).map(function(r){ return r.closer; });
-    if(closers.length){
-      var r3=el("div","wlrow");
-      r3.appendChild(el("span",null,"마감자(인수인계)"));
-      r3.appendChild(el("span","wlby", closers.join(", ")));
-      pmSec.appendChild(r3);
-    }
-    pad.appendChild(pmSec);
+    var pmCount=pmNames.length+(pmNums.length?1:0);
 
-    var edit=el("button","btn ghost","이 날 체크리스트 열기"); edit.type="button";
-    edit.style.marginTop="14px";
+    // ---- 머리: 날짜 + 요약
+    var head=el("div","wlday");
+    head.appendChild(el("div","wldaytitle", dayLabel(ds)));
+    var sum=el("div","wlsummary");
+    function stat(label, n, cls){
+      var c=el("span","wlstat "+cls); c.appendChild(el("b",null,String(n))); c.appendChild(document.createTextNode((label==="명"?"":" ")+label));
+      sum.appendChild(c);
+    }
+    stat("명", list.length, "s-who");
+    stat("업무", Object.keys(day.am).length, "s-am");
+    stat("오픈", openSecCount, "s-open");
+    stat("마감", pmCount, "s-pm");
+    head.appendChild(sum);
+    app.appendChild(head);
+
+    if(!list.length && !pmCount && !closers.length){
+      var none=el("div","card"); none.appendChild(el("div","empty","이 날은 기록이 없습니다."));
+      app.appendChild(none);
+    }
+
+    // ---- 사람별 카드
+    var variants=["a-green","a-orange","a-blue"];
+    list.forEach(function(pp,idx){
+      var card=el("div","wlperson");
+      var ph=el("div","wlpersonhead");
+      ph.appendChild(avatarCircle(pp.name, variants[idx%variants.length]));
+      ph.appendChild(el("div","wlpersonname", pp.name));
+      ph.appendChild(el("div","wlcount", "총 "+(pp.am.length+pp.open.length)+"건"));
+      card.appendChild(ph);
+      function task(tag, cls, text, detail){
+        var t=el("div","wltask");
+        t.appendChild(el("span","wltag "+cls, tag));
+        var body=el("div","wltaskbody");
+        body.appendChild(el("div","wltasktext", text));
+        if(detail) body.appendChild(el("div","wltaskdetail", detail));
+        t.appendChild(body);
+        card.appendChild(t);
+      }
+      pp.am.forEach(function(txt){ task("업무","t-am",txt,""); });
+      pp.open.forEach(function(o){ task("오픈","t-open",o.title,o.detail); });
+      app.appendChild(card);
+    });
+
+    // ---- 마감 (사람이 기록되지 않는 체크)
+    if(pmCount || closers.length){
+      var pm=el("div","wlperson wlpm");
+      var pmh=el("div","wlpersonhead");
+      var pmIcon=el("span","avatarcircle a-orange"); pmIcon.textContent="마";
+      pmh.appendChild(pmIcon);
+      pmh.appendChild(el("div","wlpersonname","마감"));
+      if(closers.length) pmh.appendChild(el("div","wlcount","마감자 "+closers.join(", ")));
+      pm.appendChild(pmh);
+      var chips=el("div","wlchips");
+      if(pmNums.length) chips.appendChild(el("span","wlpill","번호 "+pmNums.join(", ")));
+      pmNames.forEach(function(n){ chips.appendChild(el("span","wlpill",n)); });
+      if(!pmNums.length && !pmNames.length) chips.appendChild(el("span","wlempty","체크한 항목 없음"));
+      pm.appendChild(chips);
+      app.appendChild(pm);
+    }
+
+    var edit=el("button","btn ghost wleditbtn","이 날 업무리스트 열기"); edit.type="button";
     edit.addEventListener("click", function(){ go("checklist",{ date:ds }); });
-    pad.appendChild(edit);
-    card.appendChild(pad);
-    app.appendChild(card);
+    app.appendChild(edit);
   }
 
   /* ---- 선결제 고객 ---- */
