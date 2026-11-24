@@ -474,6 +474,7 @@
   .addline.wide{flex-wrap:wrap;gap:6px}
   .addline.wide input.ti{min-width:0;width:130px;padding:9px 10px;font-size:15.5px}
   .addline.wide input.closerfield{min-width:0;width:100px}
+  .addline.wide select.closerfield{min-width:0;width:100px;padding:9px 2px;font-size:14px}
   .addline.wide .datebtn{white-space:nowrap;padding:9px 10px}
   .addline.wide .addsep{font-size:13.5px}
   .addsep{font-size:15px;color:var(--muted)}
@@ -481,6 +482,35 @@
   .datebtn{font:inherit;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--rule-strong);border-radius:3px;padding:7px 11px}
   .datebtn:hover{border-color:var(--accent);color:var(--accent)}
   input.hoNum{width:110px;text-align:right}
+  .taxbox{margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
+  .taxrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:15px;color:var(--muted)}
+  .taxrow .taxval{font-weight:600;color:var(--ink)}
+  .taxrow.net{margin-top:4px;padding-top:9px;border-top:1px dashed var(--rule-strong);font-weight:700;color:var(--ink)}
+  .taxrow.net .taxval{font-size:17px;font-weight:700;color:var(--accent-text)}
+
+  .openguide{background:var(--surface);box-shadow:var(--shadow);border-radius:16px;margin-bottom:14px;overflow:hidden}
+  .openguide > summary{cursor:pointer;padding:13px 16px;font-size:15px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between}
+  .openguide > summary::-webkit-details-marker{display:none}
+  .openguide > summary::after{content:"접기";font-size:12.5px;font-weight:600;color:var(--muted)}
+  .openguide:not([open]) > summary::after{content:"펼치기"}
+  .openguidebox{padding:0 12px 14px}
+  .og-svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto;font-family:inherit}
+  .og-card{fill:var(--bg);stroke:var(--rule)}
+  .og-num{fill:#2B7A2E}
+  .og-t{fill:var(--ink)}
+  .og-w{fill:#fff}
+  .og-s{fill:var(--muted)}
+  .og-chip{fill:var(--surface);stroke:var(--rule-strong)}
+  .og-sel{fill:var(--accent-soft);stroke:var(--ink);stroke-width:2}
+  .og-g{fill:#2F8A33}
+  .og-b{fill:#3478C8}
+  .og-btn{fill:#2F8A33}
+  .og-arrow{fill:none;stroke:var(--muted);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .og-tip{fill:var(--feature-soft)}
+  .og-tipt{fill:#B8620A}
+  .unitwrap{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;vertical-align:top}
+  .unitprev{font-size:12.5px;font-weight:700;color:var(--accent-text);line-height:1.2;white-space:nowrap;min-height:15px}
+  .unitprev.empty{color:var(--muted);font-weight:500}
 
   .diffchart{overflow-x:auto}
   .diffchart svg{display:block;min-width:260px}
@@ -1227,6 +1257,20 @@
   }
   function scheduleDayEntries(weekStart, ds){
     return (state.schedule[weekStart] && state.schedule[weekStart][ds]) || [];
+  }
+  var CLOSER_NAMES=["김재기","민경민","백채성"];
+  // 마감자 선택 목록. 이미 다른 이름이 기록되어 있으면 그 이름도 목록에 남겨 둔다.
+  function closerSelect(value, cls){
+    var sel=document.createElement("select");
+    sel.className=cls||"ti closerfield";
+    var o0=document.createElement("option"); o0.value=""; o0.textContent="마감자 선택"; sel.appendChild(o0);
+    var names=CLOSER_NAMES.slice();
+    if(value && names.indexOf(value)<0) names.push(value);
+    names.forEach(function(n){
+      var o=document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o);
+    });
+    sel.value=value||"";
+    return sel;
   }
   function closerNameFromEntries(weekStart, ds){
     var entries=scheduleDayEntries(weekStart, ds);
@@ -2240,10 +2284,67 @@
     if(!compact) return names.join(", ");
     return names.map(function(n){ return n.charAt(0); }).join("·");
   }
+  /* ---- 오픈 기록 방법 안내 (그림) ---- */
+  function buildOpenGuide(){
+    var det=document.createElement("details");
+    det.className="openguide";
+    var open=true;
+    try{ open = localStorage.getItem("open-guide-collapsed")!=="1"; }catch(e){}
+    det.open=open;
+    var sum=document.createElement("summary");
+    sum.textContent="기록 방법 보기";
+    det.appendChild(sum);
+    det.addEventListener("toggle", function(){
+      try{ localStorage.setItem("open-guide-collapsed", det.open?"0":"1"); }catch(e){}
+    });
+    function chip(x,y,w,h,label,cls,txtCls,sub){
+      var out='<rect class="'+cls+'" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="10"/>';
+      var cy=y+h/2+(sub?-3:5);
+      out+='<text class="'+txtCls+'" x="'+(x+w/2)+'" y="'+cy+'" text-anchor="middle" font-size="15" font-weight="600">'+label+'</text>';
+      if(sub) out+='<text class="'+txtCls+'" x="'+(x+w/2)+'" y="'+(y+h-8)+'" text-anchor="middle" font-size="10.5" font-weight="600">'+sub+'</text>';
+      return out;
+    }
+    function step(y,h,n,title){
+      return '<rect class="og-card" x="1" y="'+y+'" width="358" height="'+h+'" rx="16"/>'
+        +'<circle class="og-num" cx="26" cy="'+(y+26)+'" r="13"/>'
+        +'<text x="26" y="'+(y+32)+'" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">'+n+'</text>'
+        +'<text class="og-t" x="48" y="'+(y+31)+'" font-size="15.5">'+title+'</text>';
+    }
+    var svg='<svg class="og-svg" viewBox="0 0 360 478" role="img" aria-label="오픈 기록 방법: 장소 선택, 직원 선택, 기록 버튼">'
+      // 1
+      +step(0,120,1,"장소·번호를 먼저 누르세요")
+      +chip(18,56,92,48,"로비","og-sel","og-t","선택됨")
+      +chip(122,56,92,48,"카운터","og-chip","og-t")
+      +chip(226,56,92,48,"1번룸","og-sel","og-t","선택됨")
+      // 2
+      +step(132,120,2,"직원을 고르세요 (여러 명 가능)")
+      +chip(18,188,92,48,"조나영","og-g","og-w")
+      +chip(122,188,92,48,"박선은","og-b","og-w")
+      +chip(226,188,92,48,"양희정","og-chip","og-t")
+      // 3
+      +step(264,162,3,"기록 버튼을 누르면 끝!")
+      +'<rect class="og-btn" x="18" y="316" width="214" height="44" rx="12"/>'
+      +'<text x="125" y="344" text-anchor="middle" font-size="15.5" font-weight="700" fill="#fff">선택한 장소에 기록</text>'
+      +'<path class="og-arrow" d="M248 338 l14 0 m-6 -6 l6 6 l-6 6"/>'
+      +'<text class="og-s" x="272" y="343" font-size="12.5">이렇게</text>'
+      +chip(18,372,120,46,"로비","og-g","og-w","조나영")
+      +chip(150,372,120,46,"1번룸","og-g","og-w","조나영")
+      +'<text class="og-s" x="282" y="400" font-size="12.5">기록돼요</text>'
+      // tip
+      +'<rect class="og-tip" x="1" y="438" width="358" height="38" rx="12"/>'
+      +'<text class="og-tipt" x="180" y="462" text-anchor="middle" font-size="13.5" font-weight="600">이미 기록된 버튼을 다시 누르면 해제돼요</text>'
+      +'</svg>';
+    var box=document.createElement("div");
+    box.className="openguidebox";
+    box.innerHTML=svg;
+    det.appendChild(box);
+    return det;
+  }
   function viewChecklistOpen(app, ds){
     var card=el("div","card cklist");
     var pad=el("div","pad");
     var open=dayOf(ds).open;
+    pad.appendChild(buildOpenGuide());
 
     OPEN_SECTIONS.forEach(function(sec){
       var data=open[sec.key]||{};
@@ -3858,21 +3959,41 @@
     wi.value="";   // 개인 근무 확인은 들어갈 때마다 시급을 새로 입력해야 한다
     var out=el("div","bigline");
     var payNum=el("div","bignum");
-    var payNote=el("div","m","예상 월급");
+    var payNote=el("div","m","세후 월급");
     out.appendChild(payNum); out.appendChild(payNote);
+    // 세전 → 세금 3.3% → 세후 내역
+    var taxBox=el("div","taxbox");
+    function taxRow(label, cls){
+      var r=el("div","taxrow"+(cls?" "+cls:""));
+      r.appendChild(el("span",null,label));
+      var v=el("span","taxval","—");
+      r.appendChild(v); taxBox.appendChild(r);
+      return v;
+    }
+    var grossV=taxRow("세전 금액");
+    var taxV=taxRow("세금 3.3%");
+    var netV=taxRow("세후 월급","net");
 
     function paintPay(){
       var w=parseFloat(wi.value);
       if(!w || w<=0 || !total){
         payNum.textContent="—";
-        payNote.textContent= total? "시급을 적으면 월급이 계산됩니다" : "근무 기록이 없습니다";
+        payNote.textContent= total? "시급을 적으면 세금 3.3%를 뗀 월급이 계산됩니다" : "근무 기록이 없습니다";
+        grossV.textContent=taxV.textContent=netV.textContent="—";
+        taxBox.style.display="none";
         return;
       }
-      var won=Math.floor(total/60*w);
+      var gross=Math.floor(total/60*w);
+      var net=Math.floor(gross*(1-0.033));     // 정산 화면과 같은 계산식
+      var tax=gross-net;
       payNum.textContent="";
-      payNum.appendChild(document.createTextNode(won.toLocaleString("ko-KR")));
+      payNum.appendChild(document.createTextNode(net.toLocaleString("ko-KR")));
       payNum.appendChild(el("span",null,"원"));
-      payNote.textContent=ymLabel(state.ym)+" 예상 급여 (시급 "+w.toLocaleString("ko-KR")+"원 기준)";
+      payNote.textContent=ymLabel(state.ym)+" 세후 월급 (시급 "+w.toLocaleString("ko-KR")+"원 기준)";
+      grossV.textContent=fmtWon(gross);
+      taxV.textContent="− "+fmtWon(tax);
+      netV.textContent=fmtWon(net);
+      taxBox.style.display="";
     }
     var t=null;
     wi.addEventListener("input", function(){
@@ -3889,10 +4010,11 @@
     pad.appendChild(field);
     out.style.marginTop="10px";
     pad.appendChild(out);
+    pad.appendChild(taxBox);
     paintPay();
     pay.appendChild(pad);
     app.appendChild(pay);
-    app.appendChild(el("p","note","세금이나 주휴수당은 포함되지 않은 단순 계산입니다."));
+    app.appendChild(el("p","note","세금은 사업소득세 3.3%를 뗀 금액입니다. 주휴수당은 포함되지 않은 단순 계산입니다."));
   }
 
   /* ---- 근무자 추가 ---- */
@@ -4010,6 +4132,31 @@
   /* ---- 일일 인수인계 ---- */
   function fmtWon(n){
     return Math.round(n||0).toLocaleString("ko-KR")+"원";
+  }
+  // 숫자 입력칸 아래에 "123만 4,500원"처럼 금액을 바로 풀어서 보여 준다 (자릿수 실수 방지)
+  function koreanWon(n){
+    n=Math.round(n||0);
+    if(n<=0) return "0원";
+    var eok=Math.floor(n/1e8), man=Math.floor((n%1e8)/1e4), rest=n%1e4;
+    var parts=[];
+    if(eok) parts.push(eok.toLocaleString("ko-KR")+"억");
+    if(man) parts.push(man.toLocaleString("ko-KR")+"만");
+    if(rest) parts.push(rest.toLocaleString("ko-KR"));
+    return parts.join(" ")+"원";
+  }
+  function unitWrap(input){
+    var wrap=el("span","unitwrap");
+    var prev=el("span","unitprev","");
+    function upd(){
+      var v=input.value;
+      if(v===""||isNaN(parseFloat(v))){ prev.textContent="단위: 원"; prev.className="unitprev empty"; return; }
+      prev.textContent=koreanWon(parseFloat(v));
+      prev.className="unitprev";
+    }
+    input.addEventListener("input", upd);
+    upd();
+    wrap.appendChild(input); wrap.appendChild(prev);
+    return wrap;
   }
   function numberField(value){
     var i=document.createElement("input");
@@ -4130,10 +4277,9 @@
     var form=el("div","addrow");
     form.appendChild(el("div","addlabel","새 인수인계 기록"));
     var line=el("div","addline wide");
-    var closerI=document.createElement("input");
-    closerI.type="text"; closerI.className="ti closerfield"; closerI.placeholder="마감자 이름";
+    var closerI=closerSelect("", "ti closerfield");
     function autofillCloser(ds){
-      fetchCloserName(ds, function(name){ if(name) closerI.value=name; });
+      fetchCloserName(ds, function(name){ if(name && CLOSER_NAMES.indexOf(name)>=0) closerI.value=name; });
     }
     dateBtn.textContent=dayLabel(draft.date);
     dateBtn.addEventListener("click", function(){
@@ -4145,11 +4291,11 @@
     autofillCloser(draft.date);
 
     line.appendChild(el("span","addsep","현금 매출"));
-    var cashI=numberField(null); line.appendChild(cashI);
+    var cashI=numberField(null); line.appendChild(unitWrap(cashI));
     line.appendChild(el("span","addsep","카드 매출"));
-    var cardI=numberField(null); line.appendChild(cardI);
+    var cardI=numberField(null); line.appendChild(unitWrap(cardI));
     line.appendChild(el("span","addsep","포스기 현금"));
-    var posI=numberField(null); line.appendChild(posI);
+    var posI=numberField(null); line.appendChild(unitWrap(posI));
     line.appendChild(el("span","addsep","마감자"));
     line.appendChild(closerI);
     form.appendChild(line);
@@ -4192,11 +4338,10 @@
         var tr=document.createElement("tr");
         if(state.handoverEditId===r.id){
           tr.appendChild(el("td",null, r.date? dayLabel(r.date):"—"));
-          var cashE=numberField(r.cash); var tdCash=el("td","num"); tdCash.appendChild(cashE); tr.appendChild(tdCash);
-          var cardE=numberField(r.card); var tdCard=el("td","num"); tdCard.appendChild(cardE); tr.appendChild(tdCard);
-          var posE=numberField(r.posCash); var tdPos=el("td","num"); tdPos.appendChild(posE); tr.appendChild(tdPos);
-          var closerE=document.createElement("input");
-          closerE.type="text"; closerE.className="ti"; closerE.value=r.closer||"";
+          var cashE=numberField(r.cash); var tdCash=el("td","num"); tdCash.appendChild(unitWrap(cashE)); tr.appendChild(tdCash);
+          var cardE=numberField(r.card); var tdCard=el("td","num"); tdCard.appendChild(unitWrap(cardE)); tr.appendChild(tdCard);
+          var posE=numberField(r.posCash); var tdPos=el("td","num"); tdPos.appendChild(unitWrap(posE)); tr.appendChild(tdPos);
+          var closerE=closerSelect(r.closer||"", "ti");
           var tdCloser=el("td",null); tdCloser.appendChild(closerE); tr.appendChild(tdCloser);
           var tdAct=el("td","act");
           var save=el("button","rowdel","✓"); save.type="button"; save.title="저장"; save.setAttribute("aria-label","저장");
